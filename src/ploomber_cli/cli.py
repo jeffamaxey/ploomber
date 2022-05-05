@@ -477,7 +477,9 @@ def cloud_build(force, github_number, github_owner, github_repo, raw):
     Currently in private alpha, ask us for an invite:
     https://ploomber.io/community
     """
+
     from ploomber.cloud import api
+
     runid = api.upload_project(force,
                                github_number,
                                github_owner,

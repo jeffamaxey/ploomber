@@ -24,7 +24,7 @@ from ploomber.spec import DAGSpec
 from ploomber.dag import util
 from ploomber.cli.cloud import get_key
 
-HOST = os.environ.get('PLOOMBER_CLOUD_HOST', 'https://api.ploomber.io/')
+HOST = os.environ.get('PLOOMBER_CLOUD_HOST', 'https://api.ploomber.io')
 
 
 def _remove_prefix(path):
@@ -71,8 +71,9 @@ def _download_file(url, skip_if_exists=False, raise_on_missing=False):
 def _request_factory(method):
     def _request(*args, **kwargs):
         response = method(*args, **kwargs)
-
-        if response.status_code >= 300:
+        from pdb import set_trace as bp
+        bp()
+        if not 200 >= response.status_code < 300:
             json_ = response.json()
             message = json_.get("Message")
 
