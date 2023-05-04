@@ -89,13 +89,10 @@ def _iterate_assignments(code_str):
     for ch in p.children:
         # FIXME: this works but we should find out what's the difference
         # between these two and if they are the only two valid cases
-        if ch.type in ['simple_stmt', 'expr_stmt']:
-            if ch.type == 'simple_stmt':
-                stmt = ch.children[0]
-            elif ch.type == 'expr_stmt':
-                stmt = ch
-
-            yield stmt
+        if ch.type == 'expr_stmt':
+            yield ch
+        elif ch.type == 'simple_stmt':
+            yield ch.children[0]
 
 
 def extract_upstream_assign(cell_code):
@@ -110,14 +107,13 @@ def extract_upstream_assign(cell_code):
                          "in the 'parameters' cell with code:\n'%s'\n"
                          "If the notebook does not have dependencies add "
                          "upstream = None" % cell_code)
+    valid_types = (Mapping, list, tuple, set)
+    if not isinstance(upstream, valid_types) and upstream is not None:
+        raise ValueError("Found an upstream variable but it is not a "
+                         "valid type (dictionary, list, tuple set or None "
+                         ", got '%s' type from code:\n"
+                         "'%s'" % (type(upstream), cell_code))
+    elif isinstance(upstream, valid_types):
+        return set(upstream)
     else:
-        valid_types = (Mapping, list, tuple, set)
-        if not (isinstance(upstream, valid_types) or upstream is None):
-            raise ValueError("Found an upstream variable but it is not a "
-                             "valid type (dictionary, list, tuple set or None "
-                             ", got '%s' type from code:\n"
-                             "'%s'" % (type(upstream), cell_code))
-        elif isinstance(upstream, valid_types):
-            return set(upstream)
-        else:
-            return None
+        return None

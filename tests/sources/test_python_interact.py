@@ -33,12 +33,11 @@ def tmp_file():
 
 def replace_first_cell(nb, source, replacement):
     for cell in nb.cells:
-        if cell['cell_type'] == 'code':
-            if cell['source'] == source:
-                cell['source'] = replacement
-                return
+        if cell['cell_type'] == 'code' and cell['source'] == source:
+            cell['source'] = replacement
+            return
 
-    raise Exception('Cell with source "{}" not found'.format(source))
+    raise Exception(f'Cell with source "{source}" not found')
 
 
 def find_cell_tagged(nb, tag):
@@ -46,7 +45,7 @@ def find_cell_tagged(nb, tag):
         if tag in cell['metadata'].get('tags', {}):
             return cell, i
 
-    raise Exception('Cell with tag "{}" not found'.format(tag))
+    raise Exception(f'Cell with tag "{tag}" not found')
 
 
 def test_to_nb():
@@ -109,13 +108,15 @@ def mixed_indentation():
     mock.__name__ = 'pkg.module'
     monkeypatch.setattr(interact.inspect, 'getmodule', lambda _: mock)
 
-    nb = function_to_nb(body_elements,
-                        imports_top='',
-                        imports_local='',
-                        imports_bottom='',
-                        params=dict(),
-                        fn=None,
-                        path=None)
+    nb = function_to_nb(
+        body_elements,
+        imports_top='',
+        imports_local='',
+        imports_bottom='',
+        params={},
+        fn=None,
+        path=None,
+    )
 
     first_cell = nb.cells[-3]['source']
     second_cell = nb.cells[-2]['source']

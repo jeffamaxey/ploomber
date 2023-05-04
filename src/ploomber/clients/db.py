@@ -149,7 +149,7 @@ class SQLAlchemyClient(Client):
         self._url_obj = _get_url_obj(uri)
         self._uri_safe = repr(self._url_obj)
 
-        self._create_engine_kwargs = create_engine_kwargs or dict()
+        self._create_engine_kwargs = create_engine_kwargs or {}
         self.flavor = self._url_obj.drivername
         self._engine = None
         self.split_source = split_source
@@ -232,4 +232,4 @@ class SQLAlchemyClient(Client):
         return self._uri_safe
 
     def __repr__(self):
-        return '{}({})'.format(type(self).__name__, self._uri_safe)
+        return f'{type(self).__name__}({self._uri_safe})'

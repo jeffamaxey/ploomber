@@ -56,9 +56,7 @@ class Placeholder(abc.AbstractPlaceholder):
     """
 
     def __init__(self, primitive, hot_reload=False, required=None):
-        self._logger = logging.getLogger('{}.{}'.format(
-            __name__,
-            type(self).__name__))
+        self._logger = logging.getLogger(f'{__name__}.{type(self).__name__}')
         self._hot_reload = hot_reload
 
         self._variables = None
@@ -112,21 +110,15 @@ class Placeholder(abc.AbstractPlaceholder):
             self._path = path
             self.__raw = path.read_text()
             self._loader_init = _make_loader_init(primitive.environment.loader)
-        # SourceLoader returns Placeholder objects, which could inadvertedly
-        # be passed to another Placeholder constructor when instantiating
-        # a source object, since they sometimes use placeholders
-        #  make sure this case is covered
         elif isinstance(primitive, Placeholder):
             self._path = primitive.path
             self.__raw = primitive._raw
             self._loader_init = _make_loader_init(
                 primitive._template.environment.loader)
         else:
-            raise TypeError('{} must be initialized with a Template, '
-                            'Placeholder, pathlib.Path or str, '
-                            'got {} instead'.format(
-                                type(self).__name__,
-                                type(primitive).__name__))
+            raise TypeError(
+                f'{type(self).__name__} must be initialized with a Template, Placeholder, pathlib.Path or str, got {type(primitive).__name__} instead'
+            )
 
         if self._path is None and hot_reload:
             raise ValueError('hot_reload only works when Placeholder is '
@@ -143,11 +135,8 @@ class Placeholder(abc.AbstractPlaceholder):
             self._validate_required(required)
 
     def _validate_required(self, required):
-        missing_required = set(required) - self.variables
-
-        if missing_required:
-            msg = ('The following tags are required. ' +
-                   display_error(missing_required, required))
+        if missing_required := set(required) - self.variables:
+            msg = f'The following tags are required. {display_error(missing_required, required)}'
             raise SourceInitializationError(msg)
 
     @property
@@ -192,9 +181,9 @@ class Placeholder(abc.AbstractPlaceholder):
 
     def __str__(self):
         if self._str is None:
-            raise RuntimeError('Tried to read {} {} without '
-                               'rendering first'.format(
-                                   type(self).__name__, repr(self)))
+            raise RuntimeError(
+                f'Tried to read {type(self).__name__} {repr(self)} without rendering first'
+            )
 
         return self._str
 
@@ -212,28 +201,23 @@ class Placeholder(abc.AbstractPlaceholder):
 
         # FIXME: self.variables should also be updated on hot_reload
         if missing:
-            raise RenderError('in {}, missing required '
-                              'parameters: {}, params passed: {}'.format(
-                                  repr(self), missing, params))
+            raise RenderError(
+                f'in {repr(self)}, missing required parameters: {missing}, params passed: {params}'
+            )
 
         if extra:
-            raise RenderError('in {}, unused parameters: {}, params '
-                              'declared: {}'.format(repr(self), extra,
-                                                    self.variables))
+            raise RenderError(
+                f'in {repr(self)}, unused parameters: {extra}, params declared: {self.variables}'
+            )
 
         try:
             self._str = self._template.render(**params)
         except UndefinedError as e:
             # TODO: we can use e.message to see which param caused the
             # error
-            raise RenderError('in {}, jinja2 raised an UndefinedError, this '
-                              'means the template is using an attribute '
-                              'or item that does not exist, the original '
-                              'traceback is shown above. For jinja2 '
-                              'implementation details see: '
-                              'http://jinja.pocoo.org/docs/latest'
-                              '/templates/#variables'.format(
-                                  repr(self))) from e
+            raise RenderError(
+                f'in {repr(self)}, jinja2 raised an UndefinedError, this means the template is using an attribute or item that does not exist, the original traceback is shown above. For jinja2 implementation details see: http://jinja.pocoo.org/docs/latest/templates/#variables'
+            ) from e
 
         return str(self)
 
@@ -271,9 +255,7 @@ class Placeholder(abc.AbstractPlaceholder):
 
     def __setstate__(self, state):
         self.__dict__.update(state)
-        self._logger = logging.getLogger('{}.{}'.format(
-            __name__,
-            type(self).__name__))
+        self._logger = logging.getLogger(f'{__name__}.{type(self).__name__}')
 
         self.__template = None
 
@@ -323,13 +305,11 @@ def _get_key(path, key):
 
     suffix2fn = {'.json': json.loads, '.yaml': yaml.safe_load}
 
-    fn = suffix2fn.get(path.suffix)
-
-    if not fn:
+    if fn := suffix2fn.get(path.suffix):
+        return fn(path.read_text())[key]
+    else:
         raise ValueError('get_key must be used with .json or .yaml files. '
                          f'Got: {path.suffix!r}')
-
-    return fn(path.read_text())[key]
 
 
 def _get_package_name(loader):
@@ -360,9 +340,9 @@ def _make_loader_init(loader):
             }
         }
     else:
-        raise TypeError('Only templates with loader type '
-                        'FileSystemLoader or PackageLoader are '
-                        'supported, got: {}'.format(type(loader).__name__))
+        raise TypeError(
+            f'Only templates with loader type FileSystemLoader or PackageLoader are supported, got: {type(loader).__name__}'
+        )
 
 
 class SQLRelationPlaceholder(abc.AbstractPlaceholder):
@@ -412,8 +392,7 @@ class SQLRelationPlaceholder(abc.AbstractPlaceholder):
             raise ValueError('name cannot be None')
 
         if kind not in ('view', 'table'):
-            raise ValueError('kind must be one of ["view", "table"] '
-                             'got "{}"'.format(kind))
+            raise ValueError(f'kind must be one of ["view", "table"] got "{kind}"')
 
         self._schema = schema
         self._name_template = Placeholder(name)
@@ -443,9 +422,9 @@ class SQLRelationPlaceholder(abc.AbstractPlaceholder):
         if len(name) > 63:
             url = ('https://www.postgresql.org/docs/current/'
                    'sql-syntax-lexical.html#SQL-SYNTAX-IDENTIFIERS')
-            raise ValueError('"{}" exceeds maximum length of 63 '
-                             ' (length is {}), '
-                             'see: {}'.format(name, len(name), url))
+            raise ValueError(
+                f'"{name}" exceeds maximum length of 63  (length is {len(name)}), see: {url}'
+            )
 
     def render(self, params, **kwargs):
         name = self._name_template.render(params, **kwargs)
@@ -456,7 +435,7 @@ class SQLRelationPlaceholder(abc.AbstractPlaceholder):
         qualified = ''
 
         if self.schema is not None:
-            qualified += self.schema + '.'
+            qualified += f'{self.schema}.'
 
         if unrendered_ok:
             qualified += self._name_template.best_repr(shorten=shorten)
@@ -488,13 +467,11 @@ class SQLRelationPlaceholder(abc.AbstractPlaceholder):
 
 
 def display_error(keys, descriptions):
-    if isinstance(descriptions, Mapping):
-        msg = '\n'
-
-        for key, error in descriptions.items():
-            msg += '"{key}": {error}\n'.format(key=key, error=error)
-
-        return msg
-
-    else:
+    if not isinstance(descriptions, Mapping):
         return ', '.join(keys)
+    msg = '\n'
+
+    for key, error in descriptions.items():
+        msg += '"{key}": {error}\n'.format(key=key, error=error)
+
+    return msg

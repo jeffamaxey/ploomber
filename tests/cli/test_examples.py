@@ -14,7 +14,7 @@ from ploomber_cli import cli
 def _mock_metadata(**kwargs):
     default = dict(timestamp=datetime.now().timestamp(),
                    branch=examples._DEFAULT_BRANCH)
-    return {**default, **kwargs}
+    return default | kwargs
 
 
 @pytest.fixture(scope='function')

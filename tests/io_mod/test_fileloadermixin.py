@@ -19,11 +19,7 @@ def test_unsupported_extension():
         task.load()
 
 
-@pytest.mark.parametrize('product, kwargs', [
-    [File('my_file.csv'), dict()],
-    [File('my_file.csv'), dict(sep=',')],
-],
-                         ids=['simple', 'with-kwargs'])
+@pytest.mark.parametrize('product, kwargs', [[File('my_file.csv'), {}], [File('my_file.csv'), dict(sep=',')]], ids=['simple', 'with-kwargs'])
 def test_sqldump(product, kwargs, tmp_directory):
     df = pd.DataFrame({'a': [1, 2, 3]})
     df.to_csv('my_file.csv', index=False)
@@ -58,16 +54,10 @@ def test_notebookrunner(tmp_directory):
 # FileLoaderMixin internal API
 
 
-@pytest.mark.parametrize(
-    'product, kwargs', [
-        [File('my_file.csv'), dict()],
-        [File('my_file.csv'), dict(sep=',')],
-        [{
+@pytest.mark.parametrize('product, kwargs', [[File('my_file.csv'), {}], [File('my_file.csv'), dict(sep=',')], [{
             'a': File('my_file.csv'),
             'b': File('another.csv')
-        }, dict(key='a')],
-    ],
-    ids=['simple', 'with-kwargs', 'with-multiple-products'])
+        }, dict(key='a')]], ids=['simple', 'with-kwargs', 'with-multiple-products'])
 def test_pythoncallable(tmp_directory, product, kwargs):
     df = pd.DataFrame({'a': [1, 2, 3]})
     df.to_csv('my_file.csv', index=False)

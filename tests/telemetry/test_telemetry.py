@@ -301,7 +301,7 @@ def test_install_lock_uses_telemetry(tmp_directory, has_conda, use_lock, env,
     monkeypatch.setattr(install.telemetry, "log_api", mock)
 
     with pytest.raises(SystemExit):
-        install.main(use_lock=True if use_lock else False)
+        install.main(use_lock=bool(use_lock))
 
     assert mock.call_count == 2
 
@@ -550,7 +550,7 @@ def test_get_latest_version(monkeypatch):
     is_latest = telemetry.get_latest_version()
     assert isinstance(is_latest, str)
     version_index = [i for i, ltr in enumerate(is_latest) if ltr == '.']
-    assert len(version_index) >= 1
+    assert version_index
 
     # Mock version and the conf, check it produces the same version
     mock_httplib = Mock()

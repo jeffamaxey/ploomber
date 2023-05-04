@@ -149,7 +149,7 @@ def test_table_wrap():
     r = Row({'a': 'abc d', 'b': 'abc d'})
     table = Table([r, r], column_width=3)
     # Max expected length: 3 (col a) + 2 (whitespace) + 3 (col b) = 8
-    assert max([len(line) for line in str(table).splitlines()]) == 8
+    assert max(len(line) for line in str(table).splitlines()) == 8
 
 
 def test_table_auto_size(monkeypatch):
@@ -159,11 +159,11 @@ def test_table_auto_size(monkeypatch):
     r = Row({'a': '1' * 60, 'b': '1' * 60})
     table = Table([r, r], column_width='auto')
 
-    assert max([len(line) for line in str(table).splitlines()]) == 80
+    assert max(len(line) for line in str(table).splitlines()) == 80
 
     # simulate resize
     monkeypatch.setattr(shutil, 'get_terminal_size', lambda: TerminalSize(120))
-    assert max([len(line) for line in str(table).splitlines()]) == 120
+    assert max(len(line) for line in str(table).splitlines()) == 120
 
 
 def test_select_multiple_cols_in_row():

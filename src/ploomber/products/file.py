@@ -64,7 +64,7 @@ class File(ProductWithClientMixin, os.PathLike, Product):
 
     def fetch_metadata(self):
         # migrate metadata file to keep compatibility with ploomber<0.10
-        old_name = Path(str(self._path_to_file) + '.source')
+        old_name = Path(f'{str(self._path_to_file)}.source')
         if old_name.is_file():
             shutil.move(old_name, self._path_to_metadata)
 

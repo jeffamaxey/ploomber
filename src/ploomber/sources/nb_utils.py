@@ -23,9 +23,7 @@ def find_cell_with_tag(nb, tag):
     Find a cell with a given tag, returns a cell, index tuple. Otherwise
     (None, None)
     """
-    out = find_cell_with_tags(nb, [tag])
-
-    if out:
+    if out := find_cell_with_tags(nb, [tag]):
         located = out[tag]
         return located['cell'], located['index']
     else:

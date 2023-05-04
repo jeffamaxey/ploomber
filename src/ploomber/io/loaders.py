@@ -7,17 +7,13 @@ from pathlib import Path
 def _file_load(product, key=None, **kwargs):
     import pandas as pd
 
-    if key:
-        path = str(product[key])
-    else:
-        path = str(product)
-
+    path = str(product[key]) if key else str(product)
     _extension2function = {
         '.csv': pd.read_csv,
         '.parquet': pd.read_parquet,
     }
 
-    extension = Path(str(path)).suffix
+    extension = Path(path).suffix
 
     fn = _extension2function.get(extension)
 

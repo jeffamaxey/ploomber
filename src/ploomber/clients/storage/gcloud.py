@@ -79,14 +79,11 @@ class GCloudStorageClient(AbstractStorageClient):
 
         self._from_json = json_credentials_path is not None
 
-        if not self._from_json:
-            self._client_kwargs = kwargs
-        else:
-            self._client_kwargs = {
-                'json_credentials_path': json_credentials_path,
-                **kwargs
-            }
-
+        self._client_kwargs = (
+            {'json_credentials_path': json_credentials_path, **kwargs}
+            if self._from_json
+            else kwargs
+        )
         storage_client = self._init_client()
         self._parent = parent
         self._bucket_name = bucket_name

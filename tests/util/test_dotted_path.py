@@ -437,10 +437,8 @@ def test_load_dotted_path_if_import_fails(path, err_msg, tmp_directory,
     Path('my_module.py').write_text('import something')
 
     mod_name = path.split('.')[0]
-    spec = importlib.util.find_spec(mod_name)
-
-    if spec:
-        err_msg = err_msg + f' (loaded {mod_name!r} from {spec.origin!r})'
+    if spec := importlib.util.find_spec(mod_name):
+        err_msg = f'{err_msg} (loaded {mod_name!r} from {spec.origin!r})'
 
     with pytest.raises(ModuleNotFoundError) as excinfo:
         dotted_path.load_dotted_path(path)

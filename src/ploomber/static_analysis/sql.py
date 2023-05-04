@@ -52,10 +52,9 @@ class SQLExtractor(Extractor):
                 # try to initialize object
                 return class_(arg)
             except Exception as e:
-                exc = ValueError("Found a variable named 'product' in "
-                                 "code: {} but it does not appear to "
-                                 "be a valid SQL product, verify it ".format(
-                                     self._jinja_extractor.code))
+                exc = ValueError(
+                    f"Found a variable named 'product' in code: {self._jinja_extractor.code} but it does not appear to be a valid SQL product, verify it "
+                )
                 raise exc from e
 
 
@@ -106,10 +105,7 @@ class ParsedSQLRelation:
                 and _normalize(self.kind) == _normalize(other.kind))
 
     def __str__(self):
-        if self.schema is None:
-            return self.name
-        else:
-            return '{}.{}'.format(self.schema, self.name)
+        return self.name if self.schema is None else f'{self.schema}.{self.name}'
 
     def __repr__(self):
         raw_repr = (self.name,
@@ -129,7 +125,7 @@ def name_from_create_statement(statement):
     ]
 
     if any(errors):
-        warnings.warn('Failed to parse statement: {}'.format(str(statement)))
+        warnings.warn(f'Failed to parse statement: {str(statement)}')
     else:
         # after removing whitespace this should be
         # [CREATE, 'TABLE|VIEW', 'IF EXISTS'?, 'IDENTIFIER']
@@ -191,15 +187,8 @@ def created_relations(sql, split_source=None):
         for idx, s in enumerate(statements) if s.get_type() == 'CREATE'
     }
 
-    relations = []
-
-    # add a relation to the final list if...
-    for relation, idx in create_idx.items():
-        # there isn't a DROP statement with the same name
-        # OR
-        # there is a DROP statement but comes before the CREATE
-        # e.g. DROP TABLE x; CREATE TABLE x AS ...
-        if relation not in drop_idx or drop_idx[relation] < idx:
-            relations.append(relation)
-
-    return relations
+    return [
+        relation
+        for relation, idx in create_idx.items()
+        if relation not in drop_idx or drop_idx[relation] < idx
+    ]

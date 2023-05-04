@@ -196,7 +196,6 @@ def _determine_unserializer(product, extension_mapping, fallback,
     if extension_mapping and suffix in extension_mapping:
         return extension_mapping[suffix]
     elif fallback:
-        unserializer = _make_unserializer(unserializer_fallback)
-        return unserializer
+        return _make_unserializer(unserializer_fallback)
     else:
         return fn

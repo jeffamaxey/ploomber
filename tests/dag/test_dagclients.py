@@ -22,7 +22,7 @@ def test_error_if_setting_invalid_key():
 
 
 def test_iter():
-    assert list(DAGClients()) == []
+    assert not list(DAGClients())
 
 
 def test_setitem_and_getitem_with_str():
@@ -122,4 +122,4 @@ def get_client():
     client = clients[File]
 
     assert isinstance(client, LocalStorageClient)
-    assert clients[File] is client
+    assert client is client

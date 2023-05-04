@@ -42,10 +42,7 @@ class DAGConfigurator:
     >>> dag = configurator.create()
     """
     def __init__(self, d=None):
-        if d:
-            self._params = DAGConfiguration.from_dict(d)
-        else:
-            self._params = DAGConfiguration()
+        self._params = DAGConfiguration.from_dict(d) if d else DAGConfiguration()
 
     @property
     def params(self):

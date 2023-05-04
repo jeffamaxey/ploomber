@@ -189,9 +189,9 @@ class SQLDump(io.FileLoaderMixin, ClientMixin, Task):
             cursor.arraysize = self.chunksize
 
             while True:
-                self._logger.info('Fetching chunk {}...'.format(i))
+                self._logger.info(f'Fetching chunk {i}...')
                 data = cursor.fetchmany()
-                self._logger.info('Fetched chunk {}'.format(i))
+                self._logger.info(f'Fetched chunk {i}')
 
                 if i == 1:
                     headers = [c[0] for c in cursor.description]
@@ -394,10 +394,9 @@ class SQLUpload(ClientMixin, Task):
 
             if not read_fn:
                 raise ValueError(
-                    'Could not infer reading function for '
-                    'file with extension: {}'.format(extension),
-                    'pass the function directly in the '
-                    'io_handler argument')
+                    f'Could not infer reading function for file with extension: {extension}',
+                    'pass the function directly in the ' 'io_handler argument',
+                )
         else:
             read_fn = self.io_handler
 

@@ -145,10 +145,10 @@ def test_old_metadata_is_replaced(arg, sqlite_client_and_tmp_dir):
         'stored_source_code': 'some code'
     })
 
-    query = "SELECT COUNT(*) FROM _metadata WHERE name='{}'".format(name)
+    query = f"SELECT COUNT(*) FROM _metadata WHERE name='{name}'"
 
     if schema is not None:
-        query += " AND schema='{}'".format(schema)
+        query += f" AND schema='{schema}'"
 
     result = list(client.engine.execute(query))[0][0]
 

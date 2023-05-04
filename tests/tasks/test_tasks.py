@@ -195,8 +195,7 @@ def test_task_change_in_status(tmp_directory):
     tb = PythonCallable(touch_w_upstream, File('b.txt'), dag, 'tb')
     tc = PythonCallable(touch_w_upstream, File('c.txt'), dag, 'tc')
 
-    assert all(
-        [t.exec_status == TaskStatus.WaitingRender for t in [ta, tb, tc]])
+    assert all(t.exec_status == TaskStatus.WaitingRender for t in [ta, tb, tc])
 
     ta >> tb >> tc
 
@@ -208,7 +207,7 @@ def test_task_change_in_status(tmp_directory):
 
     dag.build()
 
-    assert all([t.exec_status == TaskStatus.Executed for t in [ta, tb, tc]])
+    assert all(t.exec_status == TaskStatus.Executed for t in [ta, tb, tc])
 
 
 def test_raises_render_error_if_missing_param_in_code():

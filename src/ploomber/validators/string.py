@@ -5,22 +5,20 @@ from ploomber import products
 
 _NORMALIZED_TASKS = {name.upper(): name for name in tasks.__all__}
 _NORMALIZED_PRODUCTS = {name.upper(): name for name in products.__all__}
-_NORMALIZED = {**_NORMALIZED_TASKS, **_NORMALIZED_PRODUCTS}
+_NORMALIZED = _NORMALIZED_TASKS | _NORMALIZED_PRODUCTS
 
 _KEY2CLASS_TASKS = {name: getattr(tasks, name) for name in tasks.__all__}
 _KEY2CLASS_PRODUCTS = {
     name: getattr(products, name)
     for name in products.__all__
 }
-_KEY2CLASS = {**_KEY2CLASS_TASKS, **_KEY2CLASS_PRODUCTS}
+_KEY2CLASS = _KEY2CLASS_TASKS | _KEY2CLASS_PRODUCTS
 
 
 def _suggest_class_name(name: str, options):
     name = name.upper()
 
-    close_commands = get_close_matches(name, options)
-
-    if close_commands:
+    if close_commands := get_close_matches(name, options):
         return options[close_commands[0]]
     else:
         return None

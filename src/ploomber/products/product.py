@@ -41,8 +41,7 @@ class Product(abc.ABC):
                             'None')
 
         self.task = None
-        self.logger = logging.getLogger('{}.{}'.format(__name__,
-                                                       type(self).__name__))
+        self.logger = logging.getLogger(f'{__name__}.{type(self).__name__}')
 
         self._outdated_data_dependencies_status = None
         self._outdated_code_dependency_status = None
@@ -104,12 +103,7 @@ class Product(abc.ABC):
         return self._is_outdated(outdated_by_code=outdated_by_code)
 
     def _check_is_outdated(self, outdated_by_code):
-        # check product...
-        p_exists = self.exists()
-
-        # check dependencies only if the product exists
-        if p_exists:
-
+        if p_exists := self.exists():
             oudated_data = self._outdated_data_dependencies()
             outdated_code = (outdated_by_code
                              and self._outdated_code_dependency())
@@ -142,10 +136,10 @@ class Product(abc.ABC):
                               self._outdated_data_dependencies_status)
             return self._outdated_data_dependencies_status
 
-        outdated = any([
+        outdated = any(
             self._is_outdated_due_to_upstream(up.product)
             for up in self.task.upstream.values()
-        ])
+        )
 
         self._outdated_data_dependencies_status = outdated
 
@@ -228,8 +222,7 @@ class Product(abc.ABC):
 
     def __setstate__(self, state):
         self.__dict__.update(state)
-        self.logger = logging.getLogger('{}.{}'.format(__name__,
-                                                       type(self).__name__))
+        self.logger = logging.getLogger(f'{__name__}.{type(self).__name__}')
 
     def to_json_serializable(self):
         """Returns a JSON serializable version of this product
@@ -276,8 +269,8 @@ class Product(abc.ABC):
     # but not all products implement this
     def _delete_metadata(self):
         raise NotImplementedError(
-            '_delete_metadata not implemented in {}'.format(
-                type(self).__name__))
+            f'_delete_metadata not implemented in {type(self).__name__}'
+        )
 
     # download and upload are only relevant for File but we add them to keep
     # the API consistent

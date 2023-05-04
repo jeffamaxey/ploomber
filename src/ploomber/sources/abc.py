@@ -139,9 +139,11 @@ class Source(abc.ABC):
     # optional
 
     def extract_product(self):
-        raise NotImplementedError('extract_product is not implemented in '
-                                  '{}'.format(type(self).__name__))
+        raise NotImplementedError(
+            f'extract_product is not implemented in {type(self).__name__}'
+        )
 
     def extract_upstream(self):
-        raise NotImplementedError('extract_upstream is not implemented in '
-                                  '{}'.format(type(self).__name__))
+        raise NotImplementedError(
+            f'extract_upstream is not implemented in {type(self).__name__}'
+        )

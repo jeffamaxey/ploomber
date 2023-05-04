@@ -9,8 +9,7 @@ from ploomber.exceptions import ValidationError
 
 
 def _root(input_data):
-    df = pd.DataFrame(input_data)
-    return df
+    return pd.DataFrame(input_data)
 
 
 def _add_one(upstream):

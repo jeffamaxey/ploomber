@@ -101,7 +101,7 @@ def test_sql_repr_rendered(class_):
     s = class_('SELECT * FROM {{product}}')
     s.render(render_arg)
 
-    assert repr(s) == name + "('SELECT * FROM schema.name')"
+    assert repr(s) == f"{name}('SELECT * FROM schema.name')"
 
     s = class_(("SELECT * FROM {{product}} WHERE "
                 "some_very_very_long_column "

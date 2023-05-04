@@ -69,7 +69,7 @@ class Expression(Node):
         self.right = right
 
     def __repr__(self):
-        return '{} {} {}'.format(self.left, self.op, self.right)
+        return f'{self.left} {self.op} {self.right}'
 
 
 class ListNode(Node):

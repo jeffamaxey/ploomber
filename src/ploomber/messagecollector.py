@@ -16,7 +16,7 @@ class Message:
     @property
     def sub_header(self):
         loc = self._task.source.loc
-        return None if not loc else str(loc)
+        return str(loc) if loc else None
 
     @property
     def message(self):
@@ -59,13 +59,9 @@ class MessageCollector(abc.ABC):
         writer_kwargs
             Extra keyword arguments passed to the terminal writer
         """
-        writer_kwargs = writer_kwargs or dict()
+        writer_kwargs = writer_kwargs or {}
 
-        if file is None:
-            sio = StringIO()
-        else:
-            sio = file
-
+        sio = StringIO() if file is None else file
         sio.write('\n')
 
         self.tw = TerminalWriter(file=sio)
@@ -78,9 +74,7 @@ class MessageCollector(abc.ABC):
         for msg in self.messages:
             self.tw.sep('-', title=msg.header, **writer_kwargs)
 
-            sub_header = msg.sub_header
-
-            if sub_header:
+            if sub_header := msg.sub_header:
                 self.tw.sep('-', title=sub_header, **writer_kwargs)
 
             self.tw._write_source(msg.message.splitlines(), lexer='pytb')
@@ -114,8 +108,7 @@ class MessageCollector(abc.ABC):
         return bool(self.messages)
 
     def __iter__(self):
-        for message in self.messages:
-            yield message
+        yield from self.messages
 
 
 class BuildExceptionsCollector(MessageCollector):

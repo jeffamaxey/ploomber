@@ -10,7 +10,7 @@ def extract_from_sql(code):
     # [start] [any charaters] [\] [*] [any word chars] [*] [/] [any word chars]
     regex = r'^\s*\/\*([\w\W]+)\*\/[\w\W]*'
     match = re.match(regex, code)
-    return '' if match is None else match.group(1)
+    return '' if match is None else match[1]
 
 
 def extract_from_nb(nb):
@@ -39,10 +39,10 @@ def extract_from_triple_quotes(code):
 def extract_from_triple_single_quotes(code):
     regex = r"^\s*'''([\w\W]+)'''[\w\W]*"
     match = re.match(regex, code)
-    return '' if match is None else match.group(1)
+    return '' if match is None else match[1]
 
 
 def extract_from_triple_double_quotes(code):
     regex = r'^\s*"""([\w\W]+)"""[\w\W]*'
     match = re.match(regex, code)
-    return '' if match is None else match.group(1)
+    return '' if match is None else match[1]

@@ -41,10 +41,7 @@ def _safe_suffix(product):
 
 def _looks_like_path(s):
     system = platform.system()
-    if system == 'Windows':
-        return '\\' in s
-    else:
-        return '/' in s
+    return '\\' in s if system == 'Windows' else '/' in s
 
 
 def _extension_typo(extension, valid_extensions):
@@ -80,15 +77,14 @@ def task_class_from_source_str(source_str, lazy_import, reload, product):
         if extension == '.sql':
             if _safe_suffix(product) in {'.csv', '.parquet'}:
                 return tasks.SQLDump
-            else:
-                possibilities = _extension_typo(_safe_suffix(product),
-                                                ['.csv', '.parquet'])
-                if possibilities:
-                    ext = possibilities[0]
-                    raise DAGSpecInitializationError(
-                        f'Error parsing task with source {source_str!r}: '
-                        f'{_safe_suffix(product)!r} is not a valid product '
-                        f'extension. Did you mean: {ext!r}?')
+            if possibilities := _extension_typo(
+                _safe_suffix(product), ['.csv', '.parquet']
+            ):
+                ext = possibilities[0]
+                raise DAGSpecInitializationError(
+                    f'Error parsing task with source {source_str!r}: '
+                    f'{_safe_suffix(product)!r} is not a valid product '
+                    f'extension. Did you mean: {ext!r}?')
 
         return suffix2taskclass[extension]
     elif _looks_like_path(source_str):
@@ -128,9 +124,7 @@ def task_class_from_spec(task_spec, lazy_import, reload):
     name (str), it just returns the actual class object with such name,
     otherwise it tries to guess based on the source string
     """
-    class_name = task_spec.get('class', None)
-
-    if class_name:
+    if class_name := task_spec.get('class', None):
         try:
             class_ = validators.string.validate_task_class_name(class_name)
         except Exception as e:
@@ -155,21 +149,18 @@ def _init_source_for_task_class(source_str, task_class, project_root,
     task, otherwise it returns a path
     """
     if task_class is tasks.PythonCallable:
-        if lazy_import:
-            return source_str
-        else:
-            return dotted_path.load_dotted_path(source_str)
-    else:
-        path = Path(source_str)
+        return source_str if lazy_import else dotted_path.load_dotted_path(source_str)
+    path = Path(source_str)
 
         # NOTE: there is some inconsistent behavior here. project_root
         # will be none if DAGSpec was initialized with a dictionary, hence
         # this won't resolve to absolute paths - this is a bit confusing.
         # maybe always convert to absolute?
-        if project_root and not path.is_absolute() and make_absolute:
-            return Path(project_root, source_str)
-        else:
-            return path
+    return (
+        Path(project_root, source_str)
+        if project_root and not path.is_absolute() and make_absolute
+        else path
+    )
 
 
 class TaskSpec(MutableMapping):
@@ -256,15 +247,13 @@ class TaskSpec(MutableMapping):
 
         if self.meta['extract_upstream'] and self.data.get('upstream'):
             raise DAGSpecInitializationError(
-                'Error validating task "{}", if '
-                'meta.extract_upstream is set to True, tasks '
-                'should not have an "upstream" key'.format(self.data))
+                f'Error validating task "{self.data}", if meta.extract_upstream is set to True, tasks should not have an "upstream" key'
+            )
 
         if self.meta['extract_product'] and self.data.get('product'):
             raise DAGSpecInitializationError(
-                'Error validating task "{}", if '
-                'meta.extract_product is set to True, tasks '
-                'should not have a "product" key'.format(self.data))
+                f'Error validating task "{self.data}", if meta.extract_product is set to True, tasks should not have a "product" key'
+            )
 
     def to_task(self, dag):
         """
@@ -282,60 +271,62 @@ class TaskSpec(MutableMapping):
         data = copy(self.data)
         upstream = _make_iterable(data.pop('upstream'))
 
-        if 'grid' in data:
-            data_source_ = data["source"]
-            data_source = str(data_source_ if not hasattr(
-                data_source_, '__name__') else data_source_.__name__)
-
-            if 'name' not in data:
-                raise DAGSpecInitializationError(
-                    f'Error initializing task with '
-                    f'source {data_source!r}: '
-                    'tasks with \'grid\' must have a \'name\'')
-
-            task_class = data.pop('class')
-            product_class = _find_product_class(task_class, data, self.meta)
-            product = data.pop('product')
-            name = data.pop('name')
-            grid = data.pop('grid')
-
-            # hooks
-            on_render = data.pop('on_render', None)
-            on_finish = data.pop('on_finish', None)
-            on_failure = data.pop('on_failure', None)
-
-            if on_render:
-                on_render = dotted_path.DottedPath(on_render,
-                                                   lazy_load=self.lazy_import)
-
-            if on_finish:
-                on_finish = dotted_path.DottedPath(on_finish,
-                                                   lazy_load=self.lazy_import)
-
-            if on_failure:
-                on_failure = dotted_path.DottedPath(on_failure,
-                                                    lazy_load=self.lazy_import)
-
-            params = data.pop('params', None)
-
-            return TaskGroup.from_grid(task_class=task_class,
-                                       product_class=product_class,
-                                       product_primitive=product,
-                                       task_kwargs=data,
-                                       dag=dag,
-                                       name=name,
-                                       grid=grid,
-                                       resolve_relative_to=self.project_root,
-                                       on_render=on_render,
-                                       on_finish=on_finish,
-                                       on_failure=on_failure,
-                                       params=params), upstream
-        else:
+        if 'grid' not in data:
             return _init_task(data=data,
                               meta=self.meta,
                               project_root=self.project_root,
                               lazy_import=self.lazy_import,
                               dag=dag), upstream
+        if 'name' not in data:
+            data_source_ = data["source"]
+            data_source = str(
+                data_source_.__name__
+                if hasattr(data_source_, '__name__')
+                else data_source_
+            )
+
+            raise DAGSpecInitializationError(
+                f'Error initializing task with '
+                f'source {data_source!r}: '
+                'tasks with \'grid\' must have a \'name\'')
+
+        task_class = data.pop('class')
+        product_class = _find_product_class(task_class, data, self.meta)
+        product = data.pop('product')
+        name = data.pop('name')
+        grid = data.pop('grid')
+
+        # hooks
+        on_render = data.pop('on_render', None)
+        on_finish = data.pop('on_finish', None)
+        on_failure = data.pop('on_failure', None)
+
+        if on_render:
+            on_render = dotted_path.DottedPath(on_render,
+                                               lazy_load=self.lazy_import)
+
+        if on_finish:
+            on_finish = dotted_path.DottedPath(on_finish,
+                                               lazy_load=self.lazy_import)
+
+        if on_failure:
+            on_failure = dotted_path.DottedPath(on_failure,
+                                                lazy_load=self.lazy_import)
+
+        params = data.pop('params', None)
+
+        return TaskGroup.from_grid(task_class=task_class,
+                                   product_class=product_class,
+                                   product_primitive=product,
+                                   task_kwargs=data,
+                                   dag=dag,
+                                   name=name,
+                                   grid=grid,
+                                   resolve_relative_to=self.project_root,
+                                   on_render=on_render,
+                                   on_finish=on_finish,
+                                   on_failure=on_failure,
+                                   params=params), upstream
 
     def __getitem__(self, key):
         return self.data[key]
@@ -347,8 +338,7 @@ class TaskSpec(MutableMapping):
         del self.data[key]
 
     def __iter__(self):
-        for e in self.data:
-            yield e
+        yield from self.data
 
     def __len__(self):
         return len(self.data)
@@ -453,11 +443,7 @@ def _init_product(task_dict, meta, task_class, root_path, lazy_import):
                                     lazy_load=lazy_import,
                                     allow_return_none=False)
 
-        if lazy_import:
-            client = dp
-        else:
-            client = dp()
-
+        client = dp if lazy_import else dp()
         kwargs = {'client': client}
     else:
         kwargs = {}
@@ -472,7 +458,7 @@ def _init_product(task_dict, meta, task_class, root_path, lazy_import):
 
 
 def _find_product_class(task_class, task_dict, meta):
-    key = 'product_default_class.' + task_class.__name__
+    key = f'product_default_class.{task_class.__name__}'
     meta_product_default_class = get_value_at(meta, key)
 
     if 'product_class' in task_dict:
@@ -511,9 +497,8 @@ def try_product_init(class_, product_raw, relative_to, kwargs):
                                    kwargs)
             for key, value in product_raw.items()
         }
-    else:
-        path_to_source = resolve_if_file(product_raw, relative_to, class_)
-        return _try_product_init(class_, path_to_source, kwargs)
+    path_to_source = resolve_if_file(product_raw, relative_to, class_)
+    return _try_product_init(class_, path_to_source, kwargs)
 
 
 def _try_product_init(class_, path_to_source, kwargs):
@@ -578,10 +563,7 @@ def _init_client(task_dict, lazy_import):
                                     lazy_load=lazy_import,
                                     allow_return_none=False)
 
-        if lazy_import:
-            task_dict['client'] = dp
-        else:
-            task_dict['client'] = dp()
+        task_dict['client'] = dp if lazy_import else dp()
 
 
 def get_value_at(d, dotted_path):

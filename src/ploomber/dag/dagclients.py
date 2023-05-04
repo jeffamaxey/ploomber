@@ -14,14 +14,10 @@ class DAGClients(MutableMapping):
     2. __setitem__ validates the key is a Task or Product subclass
     """
     def __init__(self, mapping=None):
-        self._mapping = mapping or dict()
+        self._mapping = mapping or {}
 
     def __getitem__(self, key):
-        if isinstance(key, str):
-            key_obj = str_to_class(key)
-        else:
-            key_obj = key
-
+        key_obj = str_to_class(key) if isinstance(key, str) else key
         if key_obj is None:
             error = repr(key)
 
@@ -34,14 +30,11 @@ class DAGClients(MutableMapping):
 
         value = self._mapping[key_obj]
 
-        # this happens when loading DAGSpec with lazy_load turned on,
-        # clients are not initialized but passed as DottedPath
-        if isinstance(value, DottedPath):
-            client = value()
-            self[key] = client
-            return client
-        else:
+        if not isinstance(value, DottedPath):
             return value
+        client = value()
+        self[key] = client
+        return client
 
     def __setitem__(self, key, value):
         if isinstance(key, str):
@@ -71,8 +64,7 @@ class DAGClients(MutableMapping):
         del self._mapping[key]
 
     def __iter__(self):
-        for item in self._mapping:
-            yield item
+        yield from self._mapping
 
     def __len__(self):
         return len(self._mapping)

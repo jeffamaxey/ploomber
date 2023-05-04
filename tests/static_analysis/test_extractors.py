@@ -82,9 +82,7 @@ def test_error_when_sql_product_is_invalid(code, class_):
     with pytest.raises(ValueError) as excinfo:
         extractor.extract_product()
 
-    expected = ("Found a variable named 'product' in "
-                "code: {} but it does not appear to "
-                "be a valid SQL product, verify it ".format(code))
+    expected = f"Found a variable named 'product' in code: {code} but it does not appear to be a valid SQL product, verify it "
     assert str(excinfo.value) == expected
 
 
@@ -110,7 +108,7 @@ def test_error_when_sql_product_is_invalid(code, class_):
     ),
 ])
 def test_extract_variables(extractor):
-    assert extractor.extract_upstream() == set(['a', 'b', 'c'])
+    assert extractor.extract_upstream() == {'a', 'b', 'c'}
     assert extractor.extract_product() == {'d': 'path/d.csv'}
 
 
@@ -206,9 +204,9 @@ def fn2(upstream):
     b = pd.read_parquet(str(upstream['b']))
     x = upstream['a']
 
-    d = {'x': 1, 'y': 2}
-
     if a + b + x:
+        d = {'x': 1, 'y': 2}
+
         print(d['x'])
 
     name = 'some_name'

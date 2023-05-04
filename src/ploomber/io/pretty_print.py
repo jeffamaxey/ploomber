@@ -27,10 +27,9 @@ def try_relative_path(path):
 
     path_ = Path(path)
 
-    if path_.is_absolute():
-        try:
-            return str(path_.relative_to(Path().resolve()))
-        except ValueError:
-            return str(path)
-    else:
+    if not path_.is_absolute():
+        return str(path)
+    try:
+        return str(path_.relative_to(Path().resolve()))
+    except ValueError:
         return str(path)

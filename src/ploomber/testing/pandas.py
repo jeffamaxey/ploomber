@@ -10,13 +10,11 @@ import pandas as pd
 def load_product(product):
     extension = Path(str(product)).suffix[1:]
 
-    loader = getattr(pd, 'read_'+extension, None)
-
-    if not loader:
+    if loader := getattr(pd, 'read_' + extension, None):
+        return loader(product)
+    else:
         raise ValueError('Reading files with extension "{}" is currently '
                          'unsupported')
-    else:
-        return loader(product)
 
 
 def no_nulls_in_columns(cols, product):

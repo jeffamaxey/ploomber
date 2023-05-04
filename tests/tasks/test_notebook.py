@@ -137,9 +137,9 @@ def test_notebook_conversion_stores_as_unicode(tmp_directory, monkeypatch):
 def test_execute_sample_nb(name, out_dir, tmp_sample_tasks):
     dag = DAG()
 
-    NotebookRunner(Path(name),
-                   product=File(Path(out_dir, name + '.out.ipynb')),
-                   dag=dag)
+    NotebookRunner(
+        Path(name), product=File(Path(out_dir, f'{name}.out.ipynb')), dag=dag
+    )
     dag.build()
 
 

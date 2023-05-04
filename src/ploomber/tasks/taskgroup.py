@@ -50,8 +50,7 @@ class TaskGroup:
         self.tasks = tasks
 
     def __iter__(self):
-        for t in self.tasks:
-            yield t
+        yield from self.tasks
 
     def __len__(self):
         return len(self.tasks)
@@ -297,23 +296,22 @@ def _init_product(product_class, product_primitive, index, resolve_relative_to,
 
 def _init_product_with_str(product_class, product_primitive, index,
                            resolve_relative_to, params):
-    if index is not None:
-        path = (Path(product_primitive) if resolve_relative_to is None else
-                Path(resolve_relative_to, product_primitive).resolve())
-
-        suffix = ''.join(path.suffixes)
-        filename = path.name.replace(suffix, '')
-        filename_with_index = f'{filename}-{index}{suffix}'
-
-        path_final = Template(
-            str(path.parent / filename_with_index),
-            variable_start_string='[[',
-            variable_end_string=']]',
-        ).render(**params)
-
-        return product_class(path_final)
-    else:
+    if index is None:
         return product_class(product_primitive)
+    path = (Path(product_primitive) if resolve_relative_to is None else
+            Path(resolve_relative_to, product_primitive).resolve())
+
+    suffix = ''.join(path.suffixes)
+    filename = path.name.replace(suffix, '')
+    filename_with_index = f'{filename}-{index}{suffix}'
+
+    path_final = Template(
+        str(path.parent / filename_with_index),
+        variable_start_string='[[',
+        variable_end_string=']]',
+    ).render(**params)
+
+    return product_class(path_final)
 
 
 def _init_product_with_sql_elements(product_class, product_primitive, index,
@@ -322,7 +320,7 @@ def _init_product_with_sql_elements(product_class, product_primitive, index,
     index_to_change = 1 if len(product_primitive) == 3 else 0
     updated = copy(product_primitive)
 
-    table_name = product_primitive[index_to_change] + f'-{index}'
+    table_name = f'{product_primitive[index_to_change]}-{index}'
 
     table_name_final = Template(
         table_name,

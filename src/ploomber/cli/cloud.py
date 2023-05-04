@@ -63,15 +63,13 @@ def _set_key(user_key):
 
 def get_last_run(timestamp):
     try:
-        if timestamp is not None:
-            dt = datetime.fromtimestamp(float(timestamp))
+        if timestamp is None:
+            return 'Has not been run'
+        dt = datetime.fromtimestamp(float(timestamp))
 
-            date_h = dt.strftime('%b %d, %Y at %H:%M')
-            time_h = humanize.naturaltime(dt)
-            last_run = '{} ({})'.format(time_h, date_h)
-        else:
-            last_run = 'Has not been run'
-        return last_run
+        date_h = dt.strftime('%b %d, %Y at %H:%M')
+        time_h = humanize.naturaltime(dt)
+        return f'{time_h} ({date_h})'
     except ValueError:
         return timestamp
 
@@ -86,7 +84,7 @@ def get_pipeline(pipeline_id=None, verbose=None):
     # Validate API key
     key = get_key()
     if not key:
-        return "No cloud API Key was found: {}".format(key)
+        return f"No cloud API Key was found: {key}"
 
     # Get pipeline API call
     conn = httplib.HTTPSConnection(CLOUD_APP_URL, timeout=3)
@@ -106,7 +104,7 @@ def get_pipeline(pipeline_id=None, verbose=None):
 
         return pipeline
     except JSONDecodeError:
-        return "Issue fetching pipeline {}".format(content)
+        return f"Issue fetching pipeline {content}"
     finally:
         conn.close()
 
@@ -133,11 +131,11 @@ def _write_pipeline(pipeline_id,
     # Validate API key & inputs
     key = get_key()
     if not key:
-        return "No cloud API Key was found: {}".format(key)
+        return f"No cloud API Key was found: {key}"
     if not pipeline_id:
-        return "No input pipeline_id: {}".format(key)
+        return f"No input pipeline_id: {key}"
     elif not status:
-        return "No input pipeline status: {}".format(key)
+        return f"No input pipeline status: {key}"
 
     # Write pipeline API call
     conn = httplib.HTTPSConnection(CLOUD_APP_URL, timeout=3)
@@ -166,7 +164,7 @@ def _write_pipeline(pipeline_id,
 
         return content
     except Exception as e:
-        return "Issue on fetching pipeline {}".format(e)
+        return f"Issue on fetching pipeline {e}"
     finally:
         conn.close()
 
@@ -181,9 +179,9 @@ def delete_pipeline(pipeline_id):
     # Validate inputs
     key = get_key()
     if not key:
-        return "No cloud API Key was found: {}".format(key)
+        return f"No cloud API Key was found: {key}"
     if not pipeline_id:
-        return "No input pipeline_id: {}".format(key)
+        return f"No input pipeline_id: {key}"
 
     # Delete pipeline API call
     conn = httplib.HTTPSConnection(CLOUD_APP_URL, timeout=3)
@@ -200,7 +198,7 @@ def delete_pipeline(pipeline_id):
         content += res.read().decode('utf-8')
         return content
     except Exception as e:
-        return "Issue deleting pipeline {}".format(e)
+        return f"Issue deleting pipeline {e}"
     finally:
         conn.close()
 
@@ -211,7 +209,7 @@ def cloud_wrapper(payload=False):
     def _cloud_call(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            _payload = dict()
+            _payload = {}
             pid = str(uuid.uuid4())
 
             res = str(_write_pipeline(pipeline_id=pid, status='started'))
@@ -219,10 +217,7 @@ def cloud_wrapper(payload=False):
                 warnings.warn(res)
 
             try:
-                if payload:
-                    result = func(_payload, *args, **kwargs)
-                else:
-                    result = func(*args, **kwargs)
+                result = func(_payload, *args, **kwargs) if payload else func(*args, **kwargs)
             except Exception as e:
                 res = str(
                     _write_pipeline(pipeline_id=pid,
@@ -238,7 +233,7 @@ def cloud_wrapper(payload=False):
                     _write_pipeline(pipeline_id=pid,
                                     status='finished',
                                     dag=dag))
-                if 'Error' in str(res):
+                if 'Error' in res:
                     warnings.warn(res)
             return result
 

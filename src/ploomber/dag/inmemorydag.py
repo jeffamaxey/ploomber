@@ -30,8 +30,9 @@ class InMemoryDAG:
         if not {PythonCallable} >= types:
             extra = ','.join(
                 [type_.__name__ for type_ in types - {PythonCallable}])
-            raise TypeError('All tasks in the DAG must be PythonCallable, '
-                            'got unallowed types: {}'.format(extra))
+            raise TypeError(
+                f'All tasks in the DAG must be PythonCallable, got unallowed types: {extra}'
+            )
 
         # if the tasks are not initialized with a serializer in the partial
         # (this happens when the partial is imported in a pipeline.yaml file
@@ -122,9 +123,8 @@ class InMemoryDAG:
 
             if output is None:
                 raise ValueError(
-                    'All callables in a {} must return a value. '
-                    'Callable "{}", from task "{}" returned None'.format(
-                        type(self).__name__, task.source.name, task_name))
+                    f'All callables in a {type(self).__name__} must return a value. Callable "{task.source.name}", from task "{task_name}" returned None'
+                )
 
             outs[task_name] = output
 

@@ -25,7 +25,7 @@ def touch_root_modified(product):
 
 
 def logging_factory(dag_name):
-    handler = logging.FileHandler('{}.log'.format(dag_name))
+    handler = logging.FileHandler(f'{dag_name}.log')
     handler.setLevel(logging.INFO)
     root = logging.getLogger()
     return handler, root

@@ -50,16 +50,12 @@ def cli_endpoint(fn):
         if catch_exception:
             try:
                 fn(**kwargs)
-            # these already color output
             except (DAGBuildError, DAGRenderError) as e:
                 error = str(e)
                 color = False
             except BaseException as e:
                 click.secho(e.get_message(), file=sys.stderr, fg='red')
                 sys.exit(1)
-            except Exception as e:
-                error = _format.exception(e)
-                color = True
             else:
                 error = None
 
@@ -98,9 +94,6 @@ def command_endpoint(fn):
             fn(**kwargs)
         except BaseException as e:
             click.secho(e.get_message(), file=sys.stderr, fg='red')
-            sys.exit(1)
-        except Exception as e:
-            print(f'Error: {e}', file=sys.stderr)
             sys.exit(1)
 
     return wrapper

@@ -81,16 +81,15 @@ def df_unserializer(product):
 
 
 def metaproduct_unserializer(product):
-    if isinstance(product, Mapping):
-        # FIXME: we only need this bc the current MetaProduct implementation
-        # iterates over values (instead of keys like a dict does) - we should
-        # make it work like a regular dict and deprecate support for
-        # MetaProduct initialized from lists
-        products_d = product.products.to_json_serializable()
-
-        return {k: Path(v).read_text() for k, v in products_d.items()}
-    else:
+    if not isinstance(product, Mapping):
         return Path(product).read_text()
+    # FIXME: we only need this bc the current MetaProduct implementation
+    # iterates over values (instead of keys like a dict does) - we should
+    # make it work like a regular dict and deprecate support for
+    # MetaProduct initialized from lists
+    products_d = product.products.to_json_serializable()
+
+    return {k: Path(v).read_text() for k, v in products_d.items()}
 
 
 def touch(product):

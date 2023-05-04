@@ -256,7 +256,6 @@ class DAGSpec(MutableMapping):
                         'Failed to initialize spec. Got invalid YAML'
                     ) from error
 
-        # initialized with a dictionary...
         else:
             self._path = None
             # FIXME: add test cases, some of those features wont work if
@@ -265,8 +264,9 @@ class DAGSpec(MutableMapping):
             # directory if it's appropriate - this is mostly to make relative
             # paths consistent: they should be relative to the file that
             # contains them
-            self._parent_path = (None if not parent_path else str(
-                Path(parent_path).resolve()))
+            self._parent_path = (
+                str(Path(parent_path).resolve()) if parent_path else None
+            )
 
         self.data = data
 
@@ -285,18 +285,15 @@ class DAGSpec(MutableMapping):
 
         logger.debug('DAGSpec enviroment:\n%s', pp.pformat(env))
 
-        env = env or dict()
-        path_to_defaults = default.path_to_env_from_spec(
-            path_to_spec=self._path)
-
-        # there is an env.yaml we can use
-        if path_to_defaults:
+        env = env or {}
+        if path_to_defaults := default.path_to_env_from_spec(
+            path_to_spec=self._path
+        ):
             defaults = yaml.safe_load(Path(path_to_defaults).read_text())
             self.env = EnvDict(env,
                                path_to_here=self._parent_path,
                                defaults=defaults)
 
-        # there is no env.yaml
         else:
             self.env = EnvDict(env, path_to_here=self._parent_path)
 
@@ -357,11 +354,7 @@ class DAGSpec(MutableMapping):
 
                 self.data['tasks'].extend(imported)
 
-            # check if there are any params declared in env, not used in
-            # in the pipeline
-            extra = set(self.env) - self.env.default_keys - tags
-
-            if extra:
+            if extra := set(self.env) - self.env.default_keys - tags:
                 warnings.warn('The following placeholders are declared in the '
                               'environment but '
                               f'unused in the spec: {extra}')
@@ -379,10 +372,13 @@ class DAGSpec(MutableMapping):
             # of setup.py
             if look_up_project_root_recursively:
                 project_root = (
-                    None if not self._parent_path else
                     default.find_root_recursively(
                         starting_dir=self._parent_path,
-                        filename=None if not self._path else self._path.name))
+                        filename=self._path.name if self._path else None,
+                    )
+                    if self._parent_path
+                    else None
+                )
             else:
                 project_root = self._parent_path
 
@@ -438,8 +434,7 @@ class DAGSpec(MutableMapping):
         del self.data[key]
 
     def __iter__(self):
-        for key in self.data:
-            yield key
+        yield from self.data
 
     def __len__(self):
         return len(self.data)
@@ -489,19 +484,13 @@ class DAGSpec(MutableMapping):
                     '"serial", "parallel", or a dotted path'
                     f', got: {executor!r}')
 
-        clients = self.get('clients')
-
-        if clients:
+        if clients := self.get('clients'):
             for class_name, dotted_path_spec in clients.items():
                 dps = dotted_path.DottedPath(dotted_path_spec,
                                              lazy_load=self._lazy_import,
                                              allow_return_none=False)
 
-                if self._lazy_import:
-                    dag.clients[class_name] = dps
-                else:
-                    dag.clients[class_name] = dps()
-
+                dag.clients[class_name] = dps if self._lazy_import else dps()
         for attr in ('serializer', 'unserializer', 'on_finish', 'on_render',
                      'on_failure'):
             if attr in self:
@@ -593,14 +582,13 @@ class DAGSpec(MutableMapping):
             if class_ is NotebookRunner
         ]
 
-        if Path(path_to_dir).is_dir():
-            pattern = str(Path(path_to_dir, '*'))
-            files = list(
-                chain.from_iterable(
-                    iglob(pattern + ext) for ext in valid_extensions))
-            return cls.from_files(files)
-        else:
+        if not Path(path_to_dir).is_dir():
             raise NotADirectoryError(f'{path_to_dir!r} is not a directory')
+        pattern = str(Path(path_to_dir, '*'))
+        files = list(
+            chain.from_iterable(
+                iglob(pattern + ext) for ext in valid_extensions))
+        return cls.from_files(files)
 
     @classmethod
     def from_files(cls, files):
@@ -622,9 +610,7 @@ class DAGSpec(MutableMapping):
         if isinstance(files, str):
             files = [f for f in iglob(files) if Path(f).is_file()]
 
-        invalid = [f for f in files if Path(f).suffix not in valid_extensions]
-
-        if invalid:
+        if invalid := [f for f in files if Path(f).suffix not in valid_extensions]:
             raise ValueError(f'Cannot instantiate DAGSpec from files with '
                              f'invalid extensions: {invalid}. '
                              f'Allowed extensions are: {valid_extensions}')
@@ -853,10 +839,7 @@ def process_tasks(dag, dag_spec, root_path=None):
 def normalize_task(task):
     # NOTE: we haven't documented that we support tasks as just strings,
     # should we keep this or deprecate it?
-    if isinstance(task, str):
-        return {'source': task}
-    else:
-        return task
+    return {'source': task} if isinstance(task, str) else task
 
 
 def add_base_path_to_source_if_relative(task, base_path):
@@ -885,7 +868,7 @@ def _expand_upstream(upstream, task_names):
     for up in upstream:
         if '*' in up:
             matches = fnmatch.filter(task_names, up)
-            expanded.update({match: up for match in matches})
+            expanded |= {match: up for match in matches}
         else:
             expanded[up] = None
 

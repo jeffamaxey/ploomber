@@ -45,9 +45,7 @@ def check_duplicated_products(dag):
         else:
             prod2tasknames[product].append(name)
 
-    duplicated = {k: v for k, v in prod2tasknames.items() if len(v) > 1}
-
-    if duplicated:
+    if duplicated := {k: v for k, v in prod2tasknames.items() if len(v) > 1}:
         raise DAGWithDuplicatedProducts(
             'Tasks must generate unique products. '
             'The following products appear in more than '
@@ -71,11 +69,11 @@ def flatten_products(elements, require_file_client=True):
 def fetch_remote_metadata_in_parallel(dag):
     """Fetches remote metadta in parallel from a list of Files
     """
-    files = flatten_products(dag[t].product for t in dag._iter()
-                             if isinstance(dag[t].product, File)
-                             or isinstance(dag[t].product, MetaProduct))
-
-    if files:
+    if files := flatten_products(
+        dag[t].product
+        for t in dag._iter()
+        if isinstance(dag[t].product, (File, MetaProduct))
+    ):
         with ThreadPoolExecutor(max_workers=64) as executor:
             future2file = {
                 executor.submit(file._remote._fetch_remote_metadata): file
@@ -83,9 +81,7 @@ def fetch_remote_metadata_in_parallel(dag):
             }
 
             for future in as_completed(future2file):
-                exception = future.exception()
-
-                if exception:
+                if exception := future.exception():
                     local = future2file[future]
                     raise RuntimeError(
                         'An error occurred when fetching '
@@ -145,6 +141,6 @@ def _get_parent_from_product(product):
 
 
 def extract_product_prefixes(dag):
-    files = set(_get_parent_from_product(p) for p in iter_file_products(dag))
+    files = {_get_parent_from_product(p) for p in iter_file_products(dag)}
 
     return sorted(files)

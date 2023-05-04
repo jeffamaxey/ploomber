@@ -24,7 +24,7 @@ class RNotebookExtractor(NotebookExtractor):
 
     def extract_upstream(self):
         parsed = naive_parsing(self.parameters_cell, 'upstream')
-        return parsed if not parsed else set(parsed)
+        return set(parsed) if parsed else parsed
 
     def extract_product(self):
         return naive_parsing(self.parameters_cell, 'product')

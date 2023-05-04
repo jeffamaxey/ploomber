@@ -128,10 +128,7 @@ def test_update_with_non_string_keys():
     assert metadata.params == {1: 1}
 
 
-@pytest.mark.parametrize(
-    'method, kwargs',
-    [['clear', dict()], ['update', dict(source_code='', params={})],
-     ['update_locally', dict(data=dict())]])
+@pytest.mark.parametrize('method, kwargs', [['clear', {}], ['update', dict(source_code='', params={})], ['update_locally', dict(data={})]])
 def test_cache_flags_are_cleared_up(method, kwargs):
     prod = FakeProduct(identifier='fake-product')
     prod._outdated_data_dependencies_status = 1
@@ -438,10 +435,10 @@ def test_warns_on_unserializable_params(tmp_directory, num_warnings, params):
         m.update('some_source_code', params)
 
     assert len(records) == num_warnings
-    assert all([
+    assert all(
         'contains an unserializable object' in record.message.args[0]
         for record in records
-    ])
+    )
     assert m.stored_source_code == 'some_source_code'
     assert m.params == {'final_metadata': 'this'}
 

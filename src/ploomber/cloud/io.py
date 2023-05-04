@@ -114,9 +114,7 @@ class UploadJobGenerator:
             }
 
             for future in as_completed(future2job):
-                exception = future.exception()
-
-                if exception:
+                if exception := future.exception():
                     job = future2job[future]
                     raise RuntimeError(
                         'An error occurred when downloading product from '

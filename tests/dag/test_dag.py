@@ -295,8 +295,8 @@ def test_to_graph_d3(dag):
 def test_to_graph_prepare_for_graphviz(dag):
     graph = dag._to_graph(fmt='pygraphviz')
 
-    assert set(n.attr['id'] for n in graph) == {'first', 'second'}
-    assert set(n.attr['label'] for n in graph) == {"first", "second"}
+    assert {n.attr['id'] for n in graph} == {'first', 'second'}
+    assert {n.attr['label'] for n in graph} == {"first", "second"}
 
     assert len(graph) == 2
 
@@ -304,9 +304,10 @@ def test_to_graph_prepare_for_graphviz(dag):
 def test_to_graph_prepare_for_graphviz_include_products(dag):
     graph = dag._to_graph(fmt='pygraphviz', include_products=True)
 
-    assert set(n.attr['id'] for n in graph) == {'first', 'second'}
-    assert set(n.attr['label'] for n in graph) == {
-        "first -> \nFile('file1.txt')", "second -> \nFile('file2.txt')"
+    assert {n.attr['id'] for n in graph} == {'first', 'second'}
+    assert {n.attr['label'] for n in graph} == {
+        "first -> \nFile('file1.txt')",
+        "second -> \nFile('file2.txt')",
     }
 
     assert len(graph) == 2
@@ -330,9 +331,10 @@ def test_graphviz_graph_with_clashing_task_str(dag):
     graph = dag._to_graph(fmt='pygraphviz', include_products=True)
 
     # check the representation of the graph still looks fine
-    assert set(n.attr['id'] for n in graph) == {'first', 'second'}
-    assert set(n.attr['label'] for n in graph) == {
-        "first -> \nFile('file1.txt')", "second -> \nFile('file1.txt')"
+    assert {n.attr['id'] for n in graph} == {'first', 'second'}
+    assert {n.attr['label'] for n in graph} == {
+        "first -> \nFile('file1.txt')",
+        "second -> \nFile('file1.txt')",
     }
     assert len(graph) == 2
 
@@ -441,8 +443,7 @@ def test_build_partially(tmp_directory, executor):
     assert report['name'] == ['b']
 
     # task status in original dag are the same
-    assert (set(t.exec_status
-                for t in dag.values()) == {TaskStatus.WaitingRender})
+    assert {t.exec_status for t in dag.values()} == {TaskStatus.WaitingRender}
 
     # this triggers metadata loading for the first time
     dag.render()
@@ -573,7 +574,7 @@ def test_can_get_upstream_and_downstream_tasks():
 
     ta >> tb >> tc
 
-    assert set(ta.upstream) == set()
+    assert not set(ta.upstream)
     assert set(tb.upstream) == {'ta'}
     assert set(tc.upstream) == {'tb'}
 
@@ -658,8 +659,7 @@ def test_dag_task_status_life_cycle(executor, tmp_directory):
     t2 >> t3 >> t4
 
     assert dag._exec_status == DAGStatus.WaitingRender
-    assert {TaskStatus.WaitingRender
-            } == set([t.exec_status for t in dag.values()])
+    assert {TaskStatus.WaitingRender} == {t.exec_status for t in dag.values()}
 
     dag.render()
 
@@ -882,13 +882,13 @@ def test_sucessful_execution(executor, tmp_directory):
     assert Path('yet_another_file.txt').exists()
     assert Path('file.txt').exists()
 
-    assert set(t.exec_status for t in dag.values()) == {TaskStatus.Executed}
-    assert set(t.product._is_outdated() for t in dag.values()) == {False}
+    assert {t.exec_status for t in dag.values()} == {TaskStatus.Executed}
+    assert {t.product._is_outdated() for t in dag.values()} == {False}
 
     # nothing executed cause everything is up-to-date
     dag.build()
 
-    assert set(t.exec_status for t in dag.values()) == {TaskStatus.Skipped}
+    assert {t.exec_status for t in dag.values()} == {TaskStatus.Skipped}
 
 
 @pytest.mark.parametrize('executor', _executors)
@@ -914,7 +914,7 @@ def test_status_cleared_after_reporting_status(executor, tmp_directory):
     # this should not trigger any execution, because we just built
     dag.build()
 
-    assert set(t.exec_status for t in dag.values()) == {TaskStatus.Skipped}
+    assert {t.exec_status for t in dag.values()} == {TaskStatus.Skipped}
 
 
 def test_warnings_are_shown(tmp_directory):

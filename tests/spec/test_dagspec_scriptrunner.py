@@ -17,15 +17,15 @@ upstream = None
 Path(product).touch()
 """)
 
-    spec = {
-        'tasks': [{
-            'source': 'script.py',
-            'product': 'file.txt',
-            'class': 'ScriptRunner',
-        }]
+    return {
+        'tasks': [
+            {
+                'source': 'script.py',
+                'product': 'file.txt',
+                'class': 'ScriptRunner',
+            }
+        ]
     }
-
-    return spec
 
 
 def test_spec_with_scriptrunner(tmp_spec):

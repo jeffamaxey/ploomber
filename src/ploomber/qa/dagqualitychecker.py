@@ -17,7 +17,7 @@ class DAGQualityChecker:
             doc = task.source.doc
 
             if doc is None or doc == '':
-                warnings.warn('Task "{}" has no docstring'.format(name))
+                warnings.warn(f'Task "{name}" has no docstring')
 
 
 @requires(['numpydoc'])
@@ -30,12 +30,14 @@ def diagnose(source):
     # have placeholders
     found = source.value.variables
     docstring_np = NumpyDocString(source.value.docstring())
-    documented = set([p[0] for p in docstring_np['Parameters']])
+    documented = {p[0] for p in docstring_np['Parameters']}
 
-    print('The following variables were found in the template but are '
-          'not documented: {}'.format(found - documented))
+    print(
+        f'The following variables were found in the template but are not documented: {found - documented}'
+    )
 
-    print('The following variables are documented but were not found in '
-          'the template: {}'.format(documented - found))
+    print(
+        f'The following variables are documented but were not found in the template: {documented - found}'
+    )
 
     return documented, found

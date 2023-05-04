@@ -37,12 +37,7 @@ class SQLiteBackedProductMixin(ProductWithClientMixin, abc.ABC):
     def __get_schema(self):
         # the actual implementation can be a simple identifier or a sql
         # identifier
-        if hasattr(self, 'schema'):
-            # there is a schema (can be None)
-            return self.schema
-        else:
-            # this means there is no schema
-            return False
+        return self.schema if hasattr(self, 'schema') else False
 
     def fetch_metadata(self):
         self.__create_metadata_relation()
@@ -259,10 +254,7 @@ class PostgresRelation(SQLProductMixin, ProductWithClientMixin, Product):
         cur.close()
 
         # no metadata saved
-        if metadata is None:
-            return None
-        else:
-            return Base64Serializer.deserialize(metadata[0])
+        return None if metadata is None else Base64Serializer.deserialize(metadata[0])
 
         # TODO: also check if metadata  does not give any parsing errors,
         # if yes, also return a dict with None values, and maybe emit a warn
@@ -270,9 +262,7 @@ class PostgresRelation(SQLProductMixin, ProductWithClientMixin, Product):
     def save_metadata(self, metadata):
         metadata = Base64Serializer.serialize(metadata)
 
-        query = (("COMMENT ON {} {} IS '{}';".format(self.kind,
-                                                     self._identifier,
-                                                     metadata)))
+        query = f"COMMENT ON {self.kind} {self._identifier} IS '{metadata}';"
 
         cur = self.client.connection.cursor()
         cur.execute(query)
@@ -312,7 +302,7 @@ class PostgresRelation(SQLProductMixin, ProductWithClientMixin, Product):
         """Deletes the product
         """
         cascade = 'CASCADE' if force else ''
-        query = ("DROP {} IF EXISTS {} {}".format(self.kind, self, cascade))
+        query = f"DROP {self.kind} IF EXISTS {self} {cascade}"
         self.logger.debug('Running "%s" on the databse...', query)
 
         cur = self.client.connection.cursor()

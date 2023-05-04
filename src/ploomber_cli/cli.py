@@ -10,8 +10,7 @@ import click
 
 CLICK_VERSION = int(click.__version__[0])
 # NOTE: package_name was introduced in version 8
-VERSION_KWARGS = dict(
-    package_name='ploomber') if CLICK_VERSION >= 8 else dict()
+VERSION_KWARGS = dict(package_name='ploomber') if CLICK_VERSION >= 8 else {}
 
 
 def _suggest_command(name: str, options):
@@ -28,9 +27,7 @@ def _suggest_command(name: str, options):
     if name in mapping:
         return mapping[name]
 
-    close_commands = get_close_matches(name, options)
-
-    if close_commands:
+    if close_commands := get_close_matches(name, options):
         return close_commands[0]
     else:
         return None
@@ -314,18 +311,14 @@ def cmd_router():
             'nb': cli_module.nb.main,
         }
 
-        fn = custom[cmd_name]
-        fn()
+        custom[cmd_name]()
+    elif suggestion := _suggest_command(cmd_name, cli.commands.keys()):
+        _exit_with_error_message(
+            "Try 'ploomber --help' for help.\n\n"
+            f"Error: {cmd_name!r} is not a valid command."
+            f" Did you mean {suggestion!r}?")
     else:
-        suggestion = _suggest_command(cmd_name, cli.commands.keys())
-
-        if suggestion:
-            _exit_with_error_message(
-                "Try 'ploomber --help' for help.\n\n"
-                f"Error: {cmd_name!r} is not a valid command."
-                f" Did you mean {suggestion!r}?")
-        else:
-            cli()
+        cli()
 
 
 # the commands below are handled by the router,
@@ -407,9 +400,7 @@ def get_key():
     """
     from ploomber import cli as cli_module
 
-    key = cli_module.cloud.get_key()
-
-    if key:
+    if key := cli_module.cloud.get_key():
         click.echo(f'This is your cloud API key: {key}')
     else:
         click.echo('No cloud API key was found.')
@@ -525,11 +516,13 @@ def cloud_status(run_id, watch):
             click.clear()
             out = api.run_detail_print(run_id)
 
-            status = set([t['status'] for t in out['tasks']])
+            status = {t['status'] for t in out['tasks']}
 
-            if out['run'] != 'created' and (status == {'finished'}
-                                            or 'aborted' in status or 'failed'
-                                            in status) or cumsum >= timeout:
+            if out['run'] != 'created' and (
+                status == {'finished'}
+                or 'aborted' in status
+                or 'failed' in status
+            ):
                 break
 
             time.sleep(idle)

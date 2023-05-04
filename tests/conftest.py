@@ -317,16 +317,15 @@ def _write_sample_conda_env_lock():
 
 
 def _write_sample_conda_files(dev=False):
+    _write_sample_conda_env('environment.dev.yml' if dev else 'environment.yml')
     _write_sample_conda_env(
-        'environment.yml' if not dev else 'environment.dev.yml')
-    _write_sample_conda_env(
-        'environment.lock.yml' if not dev else 'environment.dev.lock.yml')
+        'environment.dev.lock.yml' if dev else 'environment.lock.yml'
+    )
 
 
 def _write_sample_pip_files(dev=False):
-    Path('requirements.txt' if not dev else 'requirements.dev.txt').touch()
-    Path('requirements.lock.txt' if not dev else 'requirements.dev.lock.txt'
-         ).touch()
+    Path('requirements.dev.txt' if dev else 'requirements.txt').touch()
+    Path('requirements.dev.lock.txt' if dev else 'requirements.lock.txt').touch()
 
 
 def _write_sample_pip_req(name='requirements.txt'):
@@ -408,8 +407,9 @@ def pg_client_and_schema():
     # are run at the same time, tests might conflict with each other
     # NOTE: avoid upper case characters, pandas.DataFrame.to_sql does not like
     # them
-    schema = (''.join(random.choice(string.ascii_letters)
-                      for i in range(12))).lower()
+    schema = ''.join(
+        random.choice(string.ascii_letters) for _ in range(12)
+    ).lower()
 
     # initialize client, set default schema
     # info: https://www.postgresonline.com/article_pfriendly/279.html
@@ -418,7 +418,7 @@ def pg_client_and_schema():
                                   options=f'-c search_path={schema}')))
 
     # create schema
-    client.execute('CREATE SCHEMA {};'.format(schema))
+    client.execute(f'CREATE SCHEMA {schema};')
 
     df = pd.DataFrame({'x': range(10)})
     df.to_sql('data', client.engine)
@@ -426,15 +426,13 @@ def pg_client_and_schema():
     yield client, schema
 
     # clean up schema
-    client.execute('DROP SCHEMA {} CASCADE;'.format(schema))
+    client.execute(f'DROP SCHEMA {schema} CASCADE;')
     client.close()
 
 
 @pytest.fixture(scope='session')
 def fake_conn():
-    o = object()
-
-    yield o
+    yield object()
 
 
 @pytest.fixture

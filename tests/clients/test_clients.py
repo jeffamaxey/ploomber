@@ -72,7 +72,7 @@ def test_creates_relative_dir_sqlalchemyclient(tmp_directory):
     intermediate_path = "a/relative/path"
     client = SQLAlchemyClient(f'sqlite:///{intermediate_path}/my_db.db')
     client.execute('CREATE TABLE my_table (num INT)')
-    assert Path(tmp_directory + "/" + intermediate_path).exists()
+    assert Path(f"{tmp_directory}/{intermediate_path}").exists()
 
 
 def test_creates_absolute_dir_sqlalchemyclient(tmp_directory):

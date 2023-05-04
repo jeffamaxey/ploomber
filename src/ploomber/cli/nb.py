@@ -112,11 +112,7 @@ def _py_with_single_click_enable():
     parent = Path('~/.jupyter', 'labconfig').expanduser()
     path = parent / 'default_setting_overrides.json'
 
-    if path.exists():
-        target = json.loads(path.read_text())
-    else:
-        target = {}
-
+    target = json.loads(path.read_text()) if path.exists() else {}
     recursive_update(target,
                      json.loads(_jupyterlab_default_settings_overrides))
 
@@ -318,12 +314,7 @@ def main():
                        'pipeline declaration.')
 
     if args.inject:
-        _call_in_source(
-            dag,
-            'save_injected_cell',
-            'Injected cell',
-            dict(),
-        )
+        _call_in_source(dag, 'save_injected_cell', 'Injected cell', {})
 
         click.secho(
             'Finished cell injection. Re-run this command if your '
@@ -331,12 +322,7 @@ def main():
             fg='green')
 
     if args.remove:
-        _call_in_source(
-            dag,
-            'remove_injected_cell',
-            'Removed injected cell',
-            dict(),
-        )
+        _call_in_source(dag, 'remove_injected_cell', 'Removed injected cell', {})
 
     if args.sync:
         # maybe its more efficient to pass all notebook paths at once?

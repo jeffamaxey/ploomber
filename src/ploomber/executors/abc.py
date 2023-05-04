@@ -50,7 +50,7 @@ class Executor(abc.ABC):
     """
     @abc.abstractmethod
     def __call__(self, dag):
-        exec_status = set([t.exec_status for t in dag.values()])
+        exec_status = {t.exec_status for t in dag.values()}
 
         if exec_status - {
                 TaskStatus.WaitingExecution,
@@ -58,7 +58,6 @@ class Executor(abc.ABC):
                 TaskStatus.Skipped,
                 TaskStatus.WaitingDownload,
         }:
-            raise ValueError('Tasks should only have either '
-                             'TaskStatus.WaitingExecution or '
-                             'TaskStatus.WaitingUpstream before attempting '
-                             'to execute, got status: {}'.format(exec_status))
+            raise ValueError(
+                f'Tasks should only have either TaskStatus.WaitingExecution or TaskStatus.WaitingUpstream before attempting to execute, got status: {exec_status}'
+            )

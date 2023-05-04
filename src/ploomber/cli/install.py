@@ -66,11 +66,7 @@ def main(use_lock, create_env=None, use_venv=False):
     REQS_LOCK_TXT_EXISTS = Path(_REQS_LOCK_TXT).exists()
 
     if use_lock is None:
-        if USE_CONDA:
-            use_lock = ENV_LOCK_YML_EXISTS
-        else:
-            use_lock = REQS_LOCK_TXT_EXISTS
-
+        use_lock = ENV_LOCK_YML_EXISTS if USE_CONDA else REQS_LOCK_TXT_EXISTS
     if use_lock and not ENV_LOCK_YML_EXISTS and not REQS_LOCK_TXT_EXISTS:
         raise BaseException(
             "Expected an environment.lock.yaml "
@@ -245,11 +241,12 @@ def main_conda(use_lock, create_env=True):
     # on vcruntime140.dll)
     if os.name == 'nt' and create_env:
         envs = cmdr.run(conda, 'env', 'list', '--json', capture_output=True)
-        already_installed = any([
-            env for env in json.loads(envs)['envs']
+        already_installed = any(
+            env
+            for env in json.loads(envs)['envs']
             # only check in the envs folder, ignore envs in other locations
             if 'envs' in env and env_name in env
-        ])
+        )
 
         if already_installed:
             err = (f'Environment {env_name!r} already exists, '

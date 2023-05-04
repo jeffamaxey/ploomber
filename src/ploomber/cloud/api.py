@@ -36,23 +36,19 @@ def _download_file(url, skip_if_exists=False, raise_on_missing=False):
     try:
         remotefile = urlopen(url)
     except HTTPError as e:
-        if e.code == 404:
-            path = _remove_prefix(parse.urlparse(url).path[1:])
-
-            if raise_on_missing:
-                raise FileNotFoundError(
-                    'The requested file does not exist.'
-                    ' Upload it to cloud storage and try again.')
-            else:
-                click.echo(f'File not found: {path}')
-                return
-
-        else:
+        if e.code != 404:
             raise
 
-    content_disposition = remotefile.info()['Content-Disposition']
+        path = _remove_prefix(parse.urlparse(url).path[1:])
 
-    if content_disposition:
+        if raise_on_missing:
+            raise FileNotFoundError(
+                'The requested file does not exist.'
+                ' Upload it to cloud storage and try again.')
+        click.echo(f'File not found: {path}')
+        return
+
+    if content_disposition := remotefile.info()['Content-Disposition']:
         _, params = cgi.parse_header(content_disposition)
         path = params["filename"]
     else:
@@ -106,9 +102,7 @@ def download_from_presigned(presigned):
         }
 
         for future in as_completed(future2url):
-            exception = future.exception()
-
-            if exception:
+            if exception := future.exception():
                 task = future2url[future]
                 raise RuntimeError(
                     'An error occurred when downloading product from '
@@ -176,8 +170,7 @@ def tasks_update(task_id, status):
 
 @auth_header
 def run_detail(headers, run_id):
-    res = _get(f"{HOST}/runs/{run_id}", headers=headers).json()
-    return res
+    return _get(f"{HOST}/runs/{run_id}", headers=headers).json()
 
 
 def run_detail_print(run_id):
@@ -227,15 +220,12 @@ def run_abort(headers, run_id):
 
 @auth_header
 def run_finished(headers, runid):
-    response = _get(f"{HOST}/runs/{runid}/finished", headers=headers)
-    return response
+    return _get(f"{HOST}/runs/{runid}/finished", headers=headers)
 
 
 @auth_header
 def products_list(headers):
-    res = _get(f"{HOST}/products", headers=headers).json()
-
-    if res:
+    if res := _get(f"{HOST}/products", headers=headers).json():
         print(Table.from_dicts([{'path': r} for r in res]))
     else:
         print("No products found.")
@@ -243,9 +233,7 @@ def products_list(headers):
 
 @auth_header
 def data_list(headers):
-    res = _get(f"{HOST}/data", headers=headers).json()
-
-    if res:
+    if res := _get(f"{HOST}/data", headers=headers).json():
         print(Table.from_dicts([{'path': r} for r in res]))
     else:
         print("No data found.")
@@ -260,10 +248,11 @@ def products_download(headers, pattern):
 
 
 def _has_prefix(path, prefixes):
-    if not prefixes:
-        return False
-
-    return any(str(path).startswith(prefix) for prefix in prefixes)
+    return (
+        any(str(path).startswith(prefix) for prefix in prefixes)
+        if prefixes
+        else False
+    )
 
 
 def zip_project(force, runid, github_number, verbose, ignore_prefixes=None):
@@ -323,8 +312,7 @@ def upload_zipped_project(response, verbose):
 
 @auth_header
 def trigger(headers):
-    res = _get(f"{HOST}/trigger", headers=headers).json()
-    return res
+    return _get(f"{HOST}/trigger", headers=headers).json()
 
 
 def upload_project(force=False,
@@ -402,10 +390,7 @@ def upload_data(headers, path):
 
 @auth_header
 def download_data(headers, key):
-    response = _post(f"{HOST}/download/data",
-                     headers=headers,
-                     json=dict(key=key))
-    return response
+    return _post(f"{HOST}/download/data", headers=headers, json=dict(key=key))
 
 
 @auth_header

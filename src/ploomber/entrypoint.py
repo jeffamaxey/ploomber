@@ -57,23 +57,20 @@ def find_entry_point_type(entry_point):
     if it's a file, it's loaded from that file (spec), finally, it's
     interpreted as a dotted path
     """
-    type_ = try_to_find_entry_point_type(entry_point)
-
-    if type_:
+    if type_ := try_to_find_entry_point_type(entry_point):
         return type_
+    if Path(entry_point).suffix in {'.yaml', '.yml'}:
+        raise ValueError(
+            'Could not determine the entry point type from value: '
+            f'{entry_point!r}. The file does not exist.')
     else:
-        if Path(entry_point).suffix in {'.yaml', '.yml'}:
-            raise ValueError(
-                'Could not determine the entry point type from value: '
-                f'{entry_point!r}. The file does not exist.')
-        else:
-            raise ValueError(
-                'Could not determine the entry point type from value: '
-                f'{entry_point!r}. Expected '
-                'an existing file with extension .yaml or .yml, '
-                'existing directory, glob-like pattern '
-                '(i.e., *.py) or dotted path '
-                '(i.e., module.sub_module.factory_function).')
+        raise ValueError(
+            'Could not determine the entry point type from value: '
+            f'{entry_point!r}. Expected '
+            'an existing file with extension .yaml or .yml, '
+            'existing directory, glob-like pattern '
+            '(i.e., *.py) or dotted path '
+            '(i.e., module.sub_module.factory_function).')
 
 
 def try_to_find_entry_point_type(entry_point):
@@ -84,10 +81,7 @@ def try_to_find_entry_point_type(entry_point):
     elif '::' in entry_point:
         return EntryPoint.ModulePath
     elif Path(entry_point).exists():
-        if Path(entry_point).is_dir():
-            return EntryPoint.Directory
-        else:
-            return EntryPoint.File
+        return EntryPoint.Directory if Path(entry_point).is_dir() else EntryPoint.File
     elif '.' in entry_point and Path(entry_point).suffix not in {
             '.yaml', '.yml'
     }:

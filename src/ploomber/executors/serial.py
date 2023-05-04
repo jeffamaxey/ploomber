@@ -50,10 +50,7 @@ class Serial(Executor):
         self._catch_warnings = catch_warnings
 
     def __repr__(self):
-        return ('Serial(build_in_subprocess={}, '
-                'catch_exceptions={}, catch_warnings={})'.format(
-                    self._build_in_subprocess, self._catch_exceptions,
-                    self._catch_warnings))
+        return f'Serial(build_in_subprocess={self._build_in_subprocess}, catch_exceptions={self._catch_exceptions}, catch_warnings={self._catch_warnings})'
 
     def __call__(self, dag, show_progress):
         super().__call__(dag)
@@ -126,14 +123,11 @@ class Serial(Executor):
             warnings.warn(str(warnings_all))
 
         if exceptions_all and self._catch_exceptions:
-            early_stop = any(
-                [isinstance(m.obj, DAGBuildEarlyStop) for m in exceptions_all])
+            early_stop = any(isinstance(m.obj, DAGBuildEarlyStop) for m in exceptions_all)
             if early_stop:
-                raise DAGBuildEarlyStop('Ealy stopping DAG execution, '
-                                        'at least one of the tasks that '
-                                        'failed raised a DAGBuildEarlyStop '
-                                        'exception:\n{}'.format(
-                                            str(exceptions_all)))
+                raise DAGBuildEarlyStop(
+                    f'Ealy stopping DAG execution, at least one of the tasks that failed raised a DAGBuildEarlyStop exception:\n{str(exceptions_all)}'
+                )
             else:
                 raise DAGBuildError(str(exceptions_all))
 

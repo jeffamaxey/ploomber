@@ -99,9 +99,8 @@ class Config(abc.ABC):
     def __setattr__(self, name, value):
         if name not in self.__annotations__:
             raise ValueError(f'{name} not a valid field')
-        else:
-            super().__setattr__(name, value)
-            self._write()
+        super().__setattr__(name, value)
+        self._write()
 
     @abc.abstractclassmethod
     def path(cls):

@@ -62,14 +62,13 @@ def main(payload, render_only=False):
     try:
         if render_only:
             dag.render()
+        elif args.partially:
+            report = dag.build_partially(args.partially,
+                                         force=args.force,
+                                         debug=args.debug,
+                                         skip_upstream=args.skip_upstream)
         else:
-            if args.partially:
-                report = dag.build_partially(args.partially,
-                                             force=args.force,
-                                             debug=args.debug,
-                                             skip_upstream=args.skip_upstream)
-            else:
-                report = dag.build(force=args.force, debug=args.debug)
+            report = dag.build(force=args.force, debug=args.debug)
     except Exception as e:
         _write_pipeline(pipeline_id=pid,
                         status='error',

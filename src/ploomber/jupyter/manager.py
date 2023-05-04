@@ -35,8 +35,7 @@ class DAGMapping(Mapping):
         self._mapping = dict(default)
 
     def __iter__(self):
-        for k in self._mapping:
-            yield k
+        yield from self._mapping
 
     def __getitem__(self, key):
         """Return the first task associated with a given key
@@ -100,6 +99,9 @@ def check_metadata_filter(log, model):
 def derive_class(base_class):
     # FIXME: is it possible that the base class is jupyter's native contents
     # manager and we need to include jupytext as well?
+
+
+
     class PloomberContentsManager(base_class):
         """
         Ploomber content manager subclasses jupytext TextFileContentsManager
@@ -113,101 +115,105 @@ def derive_class(base_class):
         # TODO: we can cache this depending on the folder where it's called
         # all files in the same folder share the same dag
         def load_dag(self, starting_dir=None, log=True):
-            if self.dag is None or self.spec['meta']['jupyter_hot_reload']:
-                msg = (
-                    '[Ploomber] An error occured when trying to initialize '
-                    'the pipeline. Cells won\' be injected until your '
-                    'pipeline processes correctly. See error details below.')
+            if (
+                self.dag is not None
+                and not self.spec['meta']['jupyter_hot_reload']
+            ):
+                return
+            msg = (
+                '[Ploomber] An error occured when trying to initialize '
+                'the pipeline. Cells won\' be injected until your '
+                'pipeline processes correctly. See error details below.')
 
-                if self.spec and not self.spec['meta']['jupyter_hot_reload']:
-                    msg += self.restart_msg
+            if self.spec and not self.spec['meta']['jupyter_hot_reload']:
+                msg += self.restart_msg
 
-                try:
-                    hot_reload = (self.spec
-                                  and self.spec['meta']['jupyter_hot_reload'])
-                    (self.spec, self.dag,
-                     path) = loader.lazily_load_entry_point(
-                         starting_dir=starting_dir, reload=hot_reload)
-                    path = str(Path(path).resolve())
-                # this error means we couldn't locate a parent root (which is
-                # required to determine which spec to use). Since it's expected
-                # that this happens for some folder, we simply emit a warning
-                except DAGSpecInvalidError as e:
-                    self.reset_dag()
-                    if log:
-                        self.log.warning(
-                            '[Ploomber] Skipping DAG initialization since '
-                            'there isn\'t a project root in the current or '
-                            'parent directories. Error message: '
-                            f'{str(e)}')
-                except Exception:
-                    self.reset_dag()
-                    if log:
-                        self.log.exception(msg)
+            try:
+                hot_reload = (self.spec
+                              and self.spec['meta']['jupyter_hot_reload'])
+                (self.spec, self.dag,
+                 path) = loader.lazily_load_entry_point(
+                     starting_dir=starting_dir, reload=hot_reload)
+                path = str(Path(path).resolve())
+            # this error means we couldn't locate a parent root (which is
+            # required to determine which spec to use). Since it's expected
+            # that this happens for some folder, we simply emit a warning
+            except DAGSpecInvalidError as e:
+                self.reset_dag()
+                if log:
+                    self.log.warning(
+                        '[Ploomber] Skipping DAG initialization since '
+                        'there isn\'t a project root in the current or '
+                        'parent directories. Error message: '
+                        f'{str(e)}')
+            except Exception:
+                self.reset_dag()
+                if log:
+                    self.log.exception(msg)
+            else:
+                # dag initialized successfully...
+                # TODO: we have to remove this because the same
+                # jupyter session may more than one pipeline. should
+                # only be in sys path during pipeline loading
+                # NOTE: we only need this when we are using
+                # functions as notebooks
+                base_path = Path(path).resolve()
+
+                if (self.spec['meta']['jupyter_hot_reload']
+                        and base_path not in sys.path):
+                    # jupyter does not add the current working dir by
+                    # default, if using hot reload and the dag loads
+                    # functions from local files, importlib.reload will
+                    # fail
+                    # NOTE: might be better to only add this when the dag
+                    # is actually loading from local files but that means
+                    # we have to run some logic and increases load_dag
+                    # running time, which we need to be fast
+                    sys.path.insert(0, str(base_path))
+
+                render_success = True
+
+                with chdir(base_path):
+                    # this dag object won't be executed, forcing speeds
+                    # up rendering
+                    try:
+                        self.dag.render(force=True, show_progress=False)
+                    except Exception:
+                        render_success = False
+                        self.reset_dag()
+                        if log:
+                            msg = ("[Ploomber] An error ocurred when "
+                                   "rendering your DAG, cells won't be "
+                                   "injected until the issue is resolved")
+                            self.log.exception(msg)
+
+                # if rendering failed, do not continue
+                if not render_success:
+                    return
+
+                if self.spec['meta']['jupyter_functions_as_notebooks']:
+                    self.manager = JupyterDAGManager(self.dag)
                 else:
-                    # dag initialized successfully...
-                    # TODO: we have to remove this because the same
-                    # jupyter session may more than one pipeline. should
-                    # only be in sys path during pipeline loading
-                    # NOTE: we only need this when we are using
-                    # functions as notebooks
-                    base_path = Path(path).resolve()
+                    self.manager = None
 
-                    if (self.spec['meta']['jupyter_hot_reload']
-                            and base_path not in sys.path):
-                        # jupyter does not add the current working dir by
-                        # default, if using hot reload and the dag loads
-                        # functions from local files, importlib.reload will
-                        # fail
-                        # NOTE: might be better to only add this when the dag
-                        # is actually loading from local files but that means
-                        # we have to run some logic and increases load_dag
-                        # running time, which we need to be fast
-                        sys.path.insert(0, str(base_path))
+                pairs = [(resolve_path(
+                    Path(self.root_dir).resolve(), t.source.loc), t)
+                         for t in self.dag.values()
+                         if t.source.loc is not None]
+                dag_mapping = DAGMapping(pairs)
 
-                    render_success = True
+                did_keys_change = (
+                    self.dag_mapping is None
+                    or set(self.dag_mapping) != set(dag_mapping))
 
-                    with chdir(base_path):
-                        # this dag object won't be executed, forcing speeds
-                        # up rendering
-                        try:
-                            self.dag.render(force=True, show_progress=False)
-                        except Exception:
-                            render_success = False
-                            self.reset_dag()
-                            if log:
-                                msg = ("[Ploomber] An error ocurred when "
-                                       "rendering your DAG, cells won't be "
-                                       "injected until the issue is resolved")
-                                self.log.exception(msg)
+                if did_keys_change or self.path != path:
+                    self.log.info('[Ploomber] Using dag defined '
+                                  f'at: {str(base_path)!r}')
+                    self.log.info('[Ploomber] Pipeline mapping keys: '
+                                  f'{list(dag_mapping)}')
 
-                    # if rendering failed, do not continue
-                    if not render_success:
-                        return
-
-                    if self.spec['meta']['jupyter_functions_as_notebooks']:
-                        self.manager = JupyterDAGManager(self.dag)
-                    else:
-                        self.manager = None
-
-                    pairs = [(resolve_path(
-                        Path(self.root_dir).resolve(), t.source.loc), t)
-                             for t in self.dag.values()
-                             if t.source.loc is not None]
-                    dag_mapping = DAGMapping(pairs)
-
-                    did_keys_change = (
-                        self.dag_mapping is None
-                        or set(self.dag_mapping) != set(dag_mapping))
-
-                    if did_keys_change or self.path != path:
-                        self.log.info('[Ploomber] Using dag defined '
-                                      f'at: {str(base_path)!r}')
-                        self.log.info('[Ploomber] Pipeline mapping keys: '
-                                      f'{list(dag_mapping)}')
-
-                    self.dag_mapping = dag_mapping
-                    self.path = path
+                self.dag_mapping = dag_mapping
+                self.path = path
 
         def reset_dag(self):
             self.spec = None
@@ -252,9 +258,12 @@ def derive_class(base_class):
 
             # user requested directory listing, check if there are task
             # functions defined here
-            if model['type'] == 'directory' and self.manager:
-                if model['content']:
-                    model['content'].extend(self.manager.get_by_parent(path))
+            if (
+                model['type'] == 'directory'
+                and self.manager
+                and model['content']
+            ):
+                model['content'].extend(self.manager.get_by_parent(path))
 
             check_metadata_filter(self.log, model)
 
@@ -279,52 +288,43 @@ def derive_class(base_class):
             This is called when a file is saved
             """
             if self.manager and path in self.manager:
-                out = self.manager.overwrite(model, path)
-                return out
-            else:
-                check_metadata_filter(self.log, model)
-                # not sure what's the difference between model['path'] and path
-                # but path has leading "/", _model_in_dag strips it
-                key = self._model_in_dag(model, path)
+                return self.manager.overwrite(model, path)
+            check_metadata_filter(self.log, model)
+            if key := self._model_in_dag(model, path):
+                content = model['content']
+                metadata = content.get('metadata', {}).get('ploomber', {})
 
-                if key:
-                    content = model['content']
-                    metadata = content.get('metadata', {}).get('ploomber', {})
+                if not metadata.get('injected_manually'):
+                    self.log.info(
+                        f"[Ploomber] Cleaning up injected cell in {model.get('name') or ''}..."
+                    )
+                    model['content'] = _cleanup_rendered_nb(content)
 
-                    if not metadata.get('injected_manually'):
-                        self.log.info(
-                            '[Ploomber] Cleaning up injected cell in {}...'.
-                            format(model.get('name') or ''))
-                        model['content'] = _cleanup_rendered_nb(content)
+                self.log.info("[Ploomber] Deleting product's metadata...")
+                self.dag_mapping.delete_metadata(key)
 
-                    self.log.info("[Ploomber] Deleting product's metadata...")
-                    self.dag_mapping.delete_metadata(key)
-
-                return super().save(model, path)
+            return super().save(model, path)
 
         def _model_in_dag(self, model, path=None):
             """Determine if the model is part of the  pipeline
             """
             model_in_dag = False
 
-            if path is None:
-                path = model['path']
-            else:
-                path = path.strip('/')
-
-            if self.dag:
-                if ('content' in model and model['type'] == 'notebook'):
-                    if path in self.dag_mapping:
+            path = model['path'] if path is None else path.strip('/')
+            if self.dag and (
+                'content' in model and model['type'] == 'notebook'
+            ):
+                if path in self.dag_mapping:
                         # NOTE: not sure why sometimes the model comes with a
                         # name and sometimes it doesn't
-                        self.log.info(
-                            '[Ploomber] {} is part of the pipeline... '.format(
-                                model.get('name') or ''))
-                        model_in_dag = True
-                    else:
-                        self.log.info(
-                            '[Ploomber] {} is not part of the pipeline, '
-                            'skipping...'.format(model.get('name') or ''))
+                    self.log.info(
+                        f"[Ploomber] {model.get('name') or ''} is part of the pipeline... "
+                    )
+                    model_in_dag = True
+                else:
+                    self.log.info(
+                        f"[Ploomber] {model.get('name') or ''} is not part of the pipeline, skipping..."
+                    )
 
             return path if model_in_dag else False
 
@@ -340,6 +340,7 @@ def derive_class(base_class):
                     'id': 'checkpoint',
                     'last_modified': datetime.datetime.now()
                 }
+
 
     return PloomberContentsManager
 

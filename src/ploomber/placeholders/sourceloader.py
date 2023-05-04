@@ -8,10 +8,7 @@ from jinja2 import Environment, FileSystemLoader, StrictUndefined, exceptions
 
 
 def _is_iterable_w_types(o, types):
-    for element in o:
-        if not isinstance(o, types):
-            return False
-    return True
+    return all(isinstance(o, types) for _ in o)
 
 
 class SourceLoader:
@@ -49,10 +46,10 @@ class SourceLoader:
         # validate path
         if isiterable_not_str(path):
             if _is_iterable_w_types(path, (str, Path)):
-                types_found = set(type(element) for element in path)
-                raise TypeError('If passing an iterable, path must consist '
-                                'of str and pathlib.Path objects only, got '
-                                '{}'.format(types_found))
+                types_found = {type(element) for element in path}
+                raise TypeError(
+                    f'If passing an iterable, path must consist of str and pathlib.Path objects only, got {types_found}'
+                )
 
             path = [str(element) for element in path]
         elif isinstance(path, Path):
@@ -62,7 +59,7 @@ class SourceLoader:
             module_obj = pydoc.locate(module)
 
             if module_obj is None:
-                raise ValueError('Could not locate module "{}"'.format(module))
+                raise ValueError(f'Could not locate module "{module}"')
 
             module = module_obj
 

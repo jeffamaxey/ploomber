@@ -36,21 +36,14 @@ def _find_header(md):
     mark = '<!-- end header -->'
     lines = md.splitlines()
 
-    for n, line in enumerate(lines):
-        if mark == line:
-            return n
-
-    return None
+    return next((n for n, line in enumerate(lines) if mark == line), None)
 
 
 def _skip_header(md):
-    line = _find_header(md)
-
-    if line:
-        lines = md.splitlines()
-        return '\n'.join(lines[line + 1:])
-    else:
+    if not (line := _find_header(md)):
         return md
+    lines = md.splitlines()
+    return '\n'.join(lines[line + 1:])
 
 
 def _delete_git_repo(path):
@@ -164,9 +157,7 @@ class _ExamplesManager:
         self.save_metadata(branch=self.branch)
 
     def outdated(self):
-        metadata = self.load_metadata()
-
-        if metadata:
+        if metadata := self.load_metadata():
             timestamp = metadata['timestamp']
             then = datetime.fromtimestamp(timestamp)
             now = datetime.now()
@@ -216,9 +207,7 @@ class _ExamplesManager:
 
         for category in sorted(by_category):
             title = category.capitalize()
-            description = categories.get(category)
-
-            if description:
+            if description := categories.get(category):
                 title = f'{title} ({description})'
 
             tw.sep(' ', title, green=True)
@@ -265,27 +254,26 @@ def main(name, force=False, branch=None, output=None):
                 'Get ML example: ploomber examples -n '
                 'templates/ml-basic -o ml-example',
                 type_='no-example-with-name')
-        else:
-            output = output or name
+        output = output or name
 
-            tw.sep('=', f'Copying example {name} to {output}/', blue=True)
+        tw.sep('=', f'Copying example {name} to {output}/', blue=True)
 
-            if Path(output).exists():
-                raise BaseException(
-                    f"{output!r} already exists in the current working "
-                    "directory, please rename it or move it "
-                    "to another location and try again.",
-                    type_='directory-exists')
+        if Path(output).exists():
+            raise BaseException(
+                f"{output!r} already exists in the current working "
+                "directory, please rename it or move it "
+                "to another location and try again.",
+                type_='directory-exists')
 
-            shutil.copytree(selected, output)
+        shutil.copytree(selected, output)
 
-            path_to_readme = Path(output, 'README.md')
-            out_dir = output + ('\\'
-                                if platform.system() == 'Windows' else '/')
+        path_to_readme = Path(output, 'README.md')
+        out_dir = output + ('\\'
+                            if platform.system() == 'Windows' else '/')
 
-            tw.write('Next steps:\n\n'
-                     f'$ cd {out_dir}'
-                     f'\n$ ploomber install')
-            tw.write(f'\n\nOpen {str(path_to_readme)} for details.\n',
-                     blue=True)
+        tw.write('Next steps:\n\n'
+                 f'$ cd {out_dir}'
+                 f'\n$ ploomber install')
+        tw.write(f'\n\nOpen {str(path_to_readme)} for details.\n',
+                 blue=True)
     _email_input()

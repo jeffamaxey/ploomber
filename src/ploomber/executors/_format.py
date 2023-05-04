@@ -19,13 +19,14 @@ def exception(exc):
 
     exceptions.reverse()
 
-    breakpoint = None
-
-    for i, exc in enumerate(exceptions):
-        if isinstance(exc, (TaskBuildError)):
-            breakpoint = i
-            break
-
+    breakpoint = next(
+        (
+            i
+            for i, exc in enumerate(exceptions)
+            if isinstance(exc, (TaskBuildError))
+        ),
+        None,
+    )
     exc_hide = exceptions[breakpoint:]
 
     if breakpoint is not None:
@@ -46,14 +47,14 @@ def _get_exc_name(exc):
 
 
 def _format_exception(exc):
-    if isinstance(exc,
-                  (PapermillExecutionError, RenderError, TaskRenderError)):
-        tr = str(exc)
-    else:
-        tr = ''.join(
-            traceback.format_exception(type(exc),
-                                       exc,
-                                       exc.__traceback__,
-                                       limit=None))
-
-    return tr
+    return (
+        str(exc)
+        if isinstance(
+            exc, (PapermillExecutionError, RenderError, TaskRenderError)
+        )
+        else ''.join(
+            traceback.format_exception(
+                type(exc), exc, exc.__traceback__, limit=None
+            )
+        )
+    )

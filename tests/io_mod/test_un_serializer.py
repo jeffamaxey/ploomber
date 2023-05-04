@@ -249,10 +249,7 @@ def test_serialize_with_json_default(tmp_directory):
     assert json.loads(Path('a.json').read_text()) == dict(a=1, b=2)
 
 
-@pytest.mark.parametrize('extension, reading_fn, kwargs', [
-    ['.csv', pd.read_csv, dict(index_col=0)],
-    ['.parquet', pd.read_parquet, dict()],
-])
+@pytest.mark.parametrize('extension, reading_fn, kwargs', [['.csv', pd.read_csv, dict(index_col=0)], ['.parquet', pd.read_parquet, {}]])
 def test_serialize_with_df_default(tmp_directory, extension, reading_fn,
                                    kwargs):
     @serialize.serializer(defaults=[extension])

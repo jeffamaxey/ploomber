@@ -13,7 +13,7 @@ def _run_command(path, command):
     """Safely run command in certain path
     """
     if not Path(path).is_dir():
-        raise ValueError('{} is not a directory'.format(path))
+        raise ValueError(f'{path} is not a directory')
 
     out = subprocess.check_output(shlex.split(command), cwd=str(path))
     s = out.decode('utf-8')
@@ -102,7 +102,7 @@ def get_version(package_name):
     """
     installation_path = sys.modules[package_name].__file__
 
-    NON_EDITABLE = True if 'site-packages/' in installation_path else False
+    NON_EDITABLE = 'site-packages/' in installation_path
 
     if NON_EDITABLE:
         return getattr(package_name, '__version__')

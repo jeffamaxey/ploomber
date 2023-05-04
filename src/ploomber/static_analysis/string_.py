@@ -13,5 +13,6 @@ class StringExtractor(Extractor):
         return extractor.find_variable_access(variable='upstream')
 
     def extract_product(self):
-        raise NotImplementedError('extract_product is not implemented in '
-                                  '{}'.format(type(self).__name__))
+        raise NotImplementedError(
+            f'extract_product is not implemented in {type(self).__name__}'
+        )

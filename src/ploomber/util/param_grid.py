@@ -47,8 +47,7 @@ class Interval:
         return tuples
 
     def __repr__(self):
-        return ('Interval from {} to {} with delta {}'.format(
-            self.lower, self.upper, self.delta))
+        return f'Interval from {self.lower} to {self.upper} with delta {self.delta}'
 
 
 class ParamGrid:
@@ -88,11 +87,11 @@ class ParamGrid:
             grid = [grid]
 
         self._expanded = [_expand(d) for d in grid]
-        self._params = params or dict()
+        self._params = params or {}
 
     def zip(self):
         for d in chain(self._expanded):
-            lengths = set(len(v) for v in d.values())
+            lengths = {len(v) for v in d.values()}
 
             if len(lengths) != 1:
                 raise ValueError('All parameters should have the same length')
@@ -110,11 +109,7 @@ class ParamGrid:
             values = d.values()
 
             for elements in product(*values):
-                d = {}
-
-                for k, v in zip(keys, elements):
-                    d[k] = v
-
+                d = dict(zip(keys, elements))
                 _check_keys_overlap(d, self._params)
 
                 yield {**d, **self._params}
@@ -136,9 +131,7 @@ def _expand(d):
 
 def _check_keys_overlap(a, b):
 
-    overlap = set(a) & set(b)
-
-    if overlap:
+    if overlap := set(a) & set(b):
         overlap_ = pretty_print.iterable(overlap)
         raise ValueError("Error generating grid: 'grid' and 'params' "
                          f"have overlapping keys: {overlap_}")

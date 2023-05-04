@@ -94,9 +94,8 @@ def _check_exporter(exporter, path_to_output):
                 'pyppeteer is required to use '
                 'webpdf, install it '
                 'with:\npip install "nbconvert[webpdf]"')
-        else:
-            if not chromium_downloader.check_chromium():
-                chromium_downloader.download_chromium()
+        if not chromium_downloader.check_chromium():
+            chromium_downloader.download_chromium()
 
         if Path(path_to_output).suffix != '.pdf':
             raise TaskInitializationError(
@@ -300,14 +299,12 @@ class NotebookMixin(FileLoaderMixin):
         apps = {'notebook', 'lab'}
 
         if app not in apps:
-            raise ValueError('"app" must be one of {}, got: "{}"'.format(
-                apps, app))
+            raise ValueError(f'"app" must be one of {apps}, got: "{app}"')
 
         if self.source.language != 'python':
             raise NotImplementedError(
-                'develop is not implemented for "{}" '
-                'notebooks, only python is supported'.format(
-                    self.source.language))
+                f'develop is not implemented for "{self.source.language}" notebooks, only python is supported'
+            )
 
         if self.source.loc is None:
             raise ValueError('Can only use develop in notebooks loaded '
@@ -336,22 +333,20 @@ class NotebookMixin(FileLoaderMixin):
         # maybe exclude changes in tmp cells?
         if content == content_new:
             print('No changes found...')
+        elif _save():
+            nb = nbformat.reads(content_new,
+                                as_version=nbformat.NO_CONVERT)
+
+            # remove injected-parameters and debugging-settings cells if
+            # they exist
+            _cleanup_rendered_nb(nb)
+
+            # write back in the same format and original location
+            ext_source = Path(self.source.loc).suffix[1:]
+            print('Saving notebook to: ', self.source.loc)
+            jupytext.write(nb, self.source.loc, fmt=ext_source)
         else:
-            # save changes
-            if _save():
-                nb = nbformat.reads(content_new,
-                                    as_version=nbformat.NO_CONVERT)
-
-                # remove injected-parameters and debugging-settings cells if
-                # they exist
-                _cleanup_rendered_nb(nb)
-
-                # write back in the same format and original location
-                ext_source = Path(self.source.loc).suffix[1:]
-                print('Saving notebook to: ', self.source.loc)
-                jupytext.write(nb, self.source.loc, fmt=ext_source)
-            else:
-                print('Not saving changes...')
+            print('Not saving changes...')
 
         # remove tmp file
         Path(tmp).unlink()
@@ -377,14 +372,13 @@ class NotebookMixin(FileLoaderMixin):
         """
         if self.source.language != 'python':
             raise NotImplementedError(
-                'debug is not implemented for "{}" '
-                'notebooks, only python is supported'.format(
-                    self.source.language))
+                f'debug is not implemented for "{self.source.language}" notebooks, only python is supported'
+            )
 
         opts = {'ipdb', 'pdb', 'pm'}
 
         if kind not in opts:
-            raise ValueError('kind must be one of {}'.format(opts))
+            raise ValueError(f'kind must be one of {opts}')
 
         nb = _read_rendered_notebook(self.source.nb_str_rendered)
         fd, tmp_path = tempfile.mkstemp(suffix='.py')
@@ -545,13 +539,15 @@ class NotebookRunner(NotebookMixin, Task):
                                                    check_if_kernel_installed)
         super().__init__(product, dag, name, params)
 
-        if isinstance(self.product, MetaProduct):
-            if self.product.get(nb_product_key) is None:
-                raise TaskInitializationError(
-                    f"Missing key '{nb_product_key}' in "
-                    f"product: {(str(self.product))!r}. "
-                    f"{nb_product_key!r} must contain "
-                    "the path to the output notebook.")
+        if (
+            isinstance(self.product, MetaProduct)
+            and self.product.get(nb_product_key) is None
+        ):
+            raise TaskInitializationError(
+                f"Missing key '{nb_product_key}' in "
+                f"product: {(str(self.product))!r}. "
+                f"{nb_product_key!r} must contain "
+                "the path to the output notebook.")
 
         if isinstance(self.product, MetaProduct):
             product_nb = (
@@ -668,11 +664,7 @@ class ScriptRunner(NotebookMixin, Task):
         if self.static_analysis == 'regular':
             self.source._check_notebook(raise_=True, check_signature=False)
 
-        if self.local_execution:
-            cwd = str(self.source.loc.parent)
-        else:
-            cwd = None
-
+        cwd = str(self.source.loc.parent) if self.local_execution else None
         fd, tmp = tempfile.mkstemp('.py')
         os.close(fd)
 

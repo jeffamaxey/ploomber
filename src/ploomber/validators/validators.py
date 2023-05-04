@@ -34,23 +34,22 @@ class Assert:
         return len(self.messages_error)
 
     def __iter__(self):
-        for msg in self.messages_error:
-            yield msg
+        yield from self.messages_error
 
     def __repr__(self):
-        return 'Assert oject with {} error messages'.format(len(self))
+        return f'Assert oject with {len(self)} error messages'
 
     def __str__(self):
         if not self.messages_error:
             str_ = 'No errors found'
         elif len(self.messages_error) == 1:
-            str_ = '1 error found:\n{}'.format(self.messages_error[0])
+            str_ = f'1 error found:\n{self.messages_error[0]}'
         else:
             str_ = ('{} errors found:\n * {}'.format(
                 len(self.messages_error), '\n * '.join(self.messages_error)))
 
         if len(self.messages_warning) == 1:
-            str_ += '\n\n1 warning: {}'.format(self.messages_warning[0])
+            str_ += f'\n\n1 warning: {self.messages_warning[0]}'
         elif len(self.messages_warning) > 1:
             str_ += ('\n\n{} warnings:\n * {}'.format(
                 len(self.messages_warning),
@@ -155,25 +154,24 @@ def validate_values(assert_, data, values):
 
     for column, (kind, params) in values.items():
         if column not in data_cols:
-            assert_.warn(False,
-                         ('(validate_values) Declared spec for column "{}" but'
-                          ' it does not appear in the data').format(column))
+            assert_.warn(
+                False,
+                f'(validate_values) Declared spec for column "{column}" but it does not appear in the data',
+            )
         elif kind == 'unique':
             expected = set(params)
             unique = set(data[column].unique())
-            msg = ('(validate_values) Expected unique values of  "{}" to be a'
-                   ' subset of {}, got: {}'.format(column, expected, unique))
+            msg = f'(validate_values) Expected unique values of  "{column}" to be a subset of {expected}, got: {unique}'
             assert_(expected >= unique, msg)
         elif kind == 'range':
             if len(params) != 2:
-                raise ValueError('If kind is range, you must provide two '
-                                 'values, got {}'.format(params))
+                raise ValueError(
+                    f'If kind is range, you must provide two values, got {params}'
+                )
             min_expected, max_expected = params
             min_ = data[column].min()
             max_ = data[column].max()
-            msg = ('(validate_values) Expected range of "{}" to be [{}, {}], '
-                   'got [{}, {}]'.format(column, min_expected, max_expected,
-                                         min_, max_))
+            msg = f'(validate_values) Expected range of "{column}" to be [{min_expected}, {max_expected}], got [{min_}, {max_}]'
             assert_(min_expected <= min_ and max_ <= max_expected, msg)
         else:
             raise ValueError('Got invalid kind, must be "unique" or "range"')
@@ -203,6 +201,6 @@ def data_frame_validator(df, validators):
         validator(assert_=assert_, data=df)
 
     if len(assert_):
-        raise AssertionError('Data frame validation failed. ' + str(assert_))
+        raise AssertionError(f'Data frame validation failed. {str(assert_)}')
 
     return True

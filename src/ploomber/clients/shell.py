@@ -37,9 +37,7 @@ class ShellClient(Client):
                  }):
         self.subprocess_run_kwargs = subprocess_run_kwargs
         self.run_template = run_template
-        self._logger = logging.getLogger('{}.{}'.format(
-            __name__,
-            type(self).__name__))
+        self._logger = logging.getLogger(f'{__name__}.{type(self).__name__}')
 
     @property
     def connection(self):
@@ -67,17 +65,15 @@ class ShellClient(Client):
         if res.returncode != 0:
             # log source code without expanded params
             self._logger.info(
-                ('{} returned stdout: '
-                 '{}\nstderr: {}\n'
-                 'exit status {}').format(code, stdout, stderr,
-                                          res.returncode))
+                f'{code} returned stdout: {stdout}\nstderr: {stderr}\nexit status {res.returncode}'
+            )
             raise RuntimeError(
-                ('Error executing code.\nReturned stdout: '
-                 '{}\nstderr: {}\n'
-                 'exit status {}').format(stdout, stderr, res.returncode))
+                f'Error executing code.\nReturned stdout: {stdout}\nstderr: {stderr}\nexit status {res.returncode}'
+            )
         else:
-            self._logger.info(('Finished running {}. stdout: {},'
-                               ' stderr: {}').format(self, stdout, stderr))
+            self._logger.info(
+                f'Finished running {self}. stdout: {stdout}, stderr: {stderr}'
+            )
 
     def close(self):
         pass
@@ -103,9 +99,7 @@ class RemoteShellClient(Client):
         self.connect_kwargs = connect_kwargs
         self.run_template = run_template
         self._raw_client = None
-        self._logger = logging.getLogger('{}.{}'.format(
-            __name__,
-            type(self).__name__))
+        self._logger = logging.getLogger(f'{__name__}.{type(self).__name__}')
 
     @property
     def connection(self):
@@ -130,9 +124,7 @@ class RemoteShellClient(Client):
         return self._raw_client
 
     def _random_name(self):
-        filename = (''.join(
-            random.choice(string.ascii_letters) for i in range(16)))
-        return filename
+        return ''.join(random.choice(string.ascii_letters) for _ in range(16))
 
     def read_file(self, path):
         """Read file in remote path
@@ -189,7 +181,7 @@ class RemoteShellClient(Client):
                                                              get_pty=True)
 
         for line in iter(stdout.readline, ""):
-            self._logger.info('(STDOUT): {}'.format(line))
+            self._logger.info(f'(STDOUT): {line}')
 
         returncode = stdout.channel.recv_exit_status()
 

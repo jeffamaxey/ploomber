@@ -12,7 +12,7 @@ class Token:
         return isinstance(other, type(self)) and self.value == other.value
 
     def __repr__(self):
-        return '{}("{}")'.format(type(self).__name__, self.value)
+        return f'{type(self).__name__}("{self.value}")'
 
     def to_python(self):
         return self.value

@@ -164,9 +164,7 @@ def entry_point(root_path=None):
     """
     # FIXME: rename env var used
     root_path = root_path or '.'
-    env_var = os.environ.get('ENTRY_POINT')
-
-    if env_var:
+    if env_var := os.environ.get('ENTRY_POINT'):
         if len(Path(env_var).parts) > 1:
             raise ValueError(f'ENTRY_POINT ({env_var!r}) '
                              'must be a filename and do not contain any '
@@ -291,25 +289,22 @@ def path_to_env_from_spec(path_to_spec):
 
 
 def _search_for_env_with_name_and_parent(filename, path_to_parent, raise_):
-    # pipeline.yaml....
     if filename is None:
         # look for env.yaml...
         return _path_to_filename_in_cwd_or_with_parent(
             filename='env.yaml', path_to_parent=path_to_parent, raise_=raise_)
-    # pipeline.{name}.yaml
-    else:
-        # look for env.{name}.yaml
-        path = _path_to_filename_in_cwd_or_with_parent(
-            filename=filename, path_to_parent=path_to_parent, raise_=raise_)
+    # look for env.{name}.yaml
+    path = _path_to_filename_in_cwd_or_with_parent(
+        filename=filename, path_to_parent=path_to_parent, raise_=raise_)
 
         # not found, try with env.yaml...
-        if path is None:
-            return _path_to_filename_in_cwd_or_with_parent(
-                filename='env.yaml',
-                path_to_parent=path_to_parent,
-                raise_=raise_)
-        else:
-            return path
+    return (
+        _path_to_filename_in_cwd_or_with_parent(
+            filename='env.yaml', path_to_parent=path_to_parent, raise_=raise_
+        )
+        if path is None
+        else path
+    )
 
 
 def _path_to_filename_in_cwd_or_with_parent(filename, path_to_parent, raise_):
@@ -353,16 +348,15 @@ def _path_to_filename_in_cwd_or_with_parent(filename, path_to_parent, raise_):
 def _get_env_filename_environment_variable(path_to_parent):
     env_var = os.environ.get('PLOOMBER_ENV_FILENAME')
 
-    if env_var:
-        if len(Path(env_var).parts) > 1:
-            path_to_parent_abs = str(Path(path_to_parent).resolve())
-            raise ValueError(f'PLOOMBER_ENV_FILENAME value ({env_var!r}) '
-                             'must be a filename and do not contain any '
-                             'directory components (e.g., env.yaml, '
-                             'not path/to/env.yaml). Fix the value and place '
-                             'the file in the same folder as the YAML '
-                             f'spec ({path_to_parent_abs!r}) or next to the '
-                             'current working directory')
+    if env_var and len(Path(env_var).parts) > 1:
+        path_to_parent_abs = str(Path(path_to_parent).resolve())
+        raise ValueError(f'PLOOMBER_ENV_FILENAME value ({env_var!r}) '
+                         'must be a filename and do not contain any '
+                         'directory components (e.g., env.yaml, '
+                         'not path/to/env.yaml). Fix the value and place '
+                         'the file in the same folder as the YAML '
+                         f'spec ({path_to_parent_abs!r}) or next to the '
+                         'current working directory')
 
     return env_var
 
@@ -375,10 +369,7 @@ def extract_name(path):
     name = Path(path).name
     parts = name.split('.')
 
-    if len(parts) < 3:
-        return None
-    else:
-        return parts[1]
+    return None if len(parts) < 3 else parts[1]
 
 
 def find_file_recursively(name, max_levels_up=6, starting_dir=None):
@@ -420,10 +411,7 @@ def find_parent_of_file_recursively(name, max_levels_up=6, starting_dir=None):
                                          max_levels_up=6,
                                          starting_dir=starting_dir)
 
-    if path:
-        return path.parent, levels
-
-    return None, None
+    return (path.parent, levels) if path else (None, None)
 
 
 def find_root_recursively(starting_dir=None,
@@ -473,20 +461,20 @@ def find_root_recursively(starting_dir=None,
     # OR
     # if the pipeline.yaml if closer to the starting_dir than the setup.py.
     # e.g., project/some/pipeline.yaml vs project/setup.py
-    if root_by_pipeline and not root_by_setup:
-        if root_by_pipeline.parents[0].name == 'src':
-            pkg_portion = str(Path(*root_by_pipeline.parts[-2:]))
-            raise DAGSpecInvalidError(
-                'Invalid project layout. Found project root at '
-                f'{root_by_pipeline}  under a parent with name {pkg_portion}. '
-                'This suggests a package '
-                'structure but no setup.py exists. If your project is a '
-                'package create a setup.py file, otherwise rename the '
-                'src directory')
+    if root_by_pipeline:
+        if not root_by_setup:
+            if root_by_pipeline.parents[0].name == 'src':
+                pkg_portion = str(Path(*root_by_pipeline.parts[-2:]))
+                raise DAGSpecInvalidError(
+                    'Invalid project layout. Found project root at '
+                    f'{root_by_pipeline}  under a parent with name {pkg_portion}. '
+                    'This suggests a package '
+                    'structure but no setup.py exists. If your project is a '
+                    'package create a setup.py file, otherwise rename the '
+                    'src directory')
 
-        root_found = root_by_pipeline
-    elif root_by_pipeline and root_by_setup:
-        if (pipeline_levels < setup_levels
+            root_found = root_by_pipeline
+        elif (pipeline_levels < setup_levels
                 and root_by_pipeline.parents[0].name != 'src'):
             root_found = root_by_pipeline
 
@@ -523,35 +511,34 @@ def find_root_recursively(starting_dir=None,
 
         root_found = root_by_setup
 
-    if root_found:
-        if check_parents:
-            try:
-                another_found = find_root_recursively(
-                    starting_dir=Path(root_found).parent,
-                    filename=filename,
-                    check_parents=False)
-            except DAGSpecInvalidError:
-                pass
-            else:
-                warnings.warn(
-                    f'Found project root with filename {filename!r} '
-                    f'at {str(root_found)!r}, but '
-                    'found another one in a parent directory '
-                    f'({str(another_found)!r}). The former will be used. '
-                    'Nested YAML specs are not recommended, '
-                    'consider moving them to the same folder and '
-                    'rename them (e.g., project/pipeline.yaml '
-                    'and project/pipeline.serve.yaml) or store them '
-                    'in separate folders (e.g., '
-                    'project1/pipeline.yaml and '
-                    'project2/pipeline.yaml')
-
-        return root_found
-    else:
+    if not root_found:
         raise DAGSpecInvalidError('Failed to determine project root. Looked '
                                   'recursively for a setup.py or '
                                   f'{filename} in parent folders but none of '
                                   'those files exist')
+    if check_parents:
+        try:
+            another_found = find_root_recursively(
+                starting_dir=Path(root_found).parent,
+                filename=filename,
+                check_parents=False)
+        except DAGSpecInvalidError:
+            pass
+        else:
+            warnings.warn(
+                f'Found project root with filename {filename!r} '
+                f'at {str(root_found)!r}, but '
+                'found another one in a parent directory '
+                f'({str(another_found)!r}). The former will be used. '
+                'Nested YAML specs are not recommended, '
+                'consider moving them to the same folder and '
+                'rename them (e.g., project/pipeline.yaml '
+                'and project/pipeline.serve.yaml) or store them '
+                'in separate folders (e.g., '
+                'project1/pipeline.yaml and '
+                'project2/pipeline.yaml')
+
+    return root_found
 
 
 def try_to_find_root_recursively(starting_dir=None):
@@ -568,12 +555,10 @@ def find_package_name(starting_dir=None):
     a valid root path
     """
     root = find_root_recursively(starting_dir=starting_dir)
-    pkg = _package_location(root_path=root)
-
-    if not pkg:
+    if pkg := _package_location(root_path=root):
+        return Path(pkg).parent.name
+    else:
         raise ValueError(
             'Could not find a valid package. Make sure '
             'there is a src/package-name/pipeline.yaml file relative '
             f'to your project root ({root})')
-
-    return Path(pkg).parent.name

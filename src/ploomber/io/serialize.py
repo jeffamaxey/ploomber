@@ -88,12 +88,9 @@ def _extension_mapping_validate(extension_mapping, fn):
                 'it to be a dictionary but got a '
                 f'{type(extension_mapping).__name__}')
 
-        invalid_keys = {
-            k
-            for k in extension_mapping.keys() if not k.startswith('.')
-        }
-
-        if invalid_keys:
+        if invalid_keys := {
+            k for k in extension_mapping.keys() if not k.startswith('.')
+        }:
             raise ValueError(
                 f'Invalid extension_mapping {extension_mapping!r} for '
                 f'decorated function {fn.__name__!r}. Expected '
@@ -115,17 +112,14 @@ def _build_extension_mapping_final(extension_mapping, defaults, fn,
         passed_defaults = set(defaults)
 
         if extension_mapping:
-            overlap = passed_defaults & set(extension_mapping)
-            if overlap:
+            if overlap := passed_defaults & set(extension_mapping):
                 raise ValueError(
                     f'Error when adding @{name} decorator '
                     f'to function {fn.__name__!r}: '
                     'Keys in \'extension_mapping\' and \'defaults\' must not '
                     f'overlap (overlapping keys: {overlap})')
 
-        unexpected_defaults = passed_defaults - defaults_keys
-
-        if unexpected_defaults:
+        if unexpected_defaults := passed_defaults - defaults_keys:
             raise ValueError(
                 f'Error when adding @{name} decorator '
                 f'to function {fn.__name__!r}: unexpected values in '

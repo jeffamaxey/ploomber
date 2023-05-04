@@ -405,7 +405,6 @@ def test_file_spec_resolves_sources_location(tmp_nbs):
     ['.', 'dir'],
     ['dir', '.'],
 ])
-# TODO try metyaproduct
 def test_init_from_file_resolves_source_location(tmp_directory, spec, base,
                                                  cwd):
     """
@@ -433,10 +432,11 @@ upstream = None
     absolute = str(Path(tmp_directory, base).resolve())
 
     assert all(
-        [str(dag[name].source.loc).startswith(absolute) for name in list(dag)])
-    assert all([
+        str(dag[name].source.loc).startswith(absolute) for name in list(dag)
+    )
+    assert all(
         str(product).startswith(absolute) for product in get_all_products(dag)
-    ])
+    )
 
 
 @pytest.mark.parametrize(
@@ -502,10 +502,11 @@ upstream = None
     dag = DAGSpec(path_to_pipeline).to_dag()
     absolute = str(Path(tmp_directory, base).resolve())
     assert all(
-        [str(dag[name].source.loc).startswith(absolute) for name in list(dag)])
-    assert all([
+        str(dag[name].source.loc).startswith(absolute) for name in list(dag)
+    )
+    assert all(
         str(product).startswith(absolute) for product in get_all_products(dag)
-    ])
+    )
 
 
 @pytest.mark.parametrize(
@@ -866,16 +867,18 @@ def test_git_placeholder_and_git_not_installed(monkeypatch, tmp_directory,
     monkeypatch.setattr(expand.shutil, "which", lambda _: None)
 
     spec_dict = {
-        'tasks': [{
-            'source': str(Path('tasks', 'script.py')),
-            'product': {
-                'nb': str(Path('out', 'nb.html')),
-                'data': str(Path('out', 'data.csv')),
-            },
-            'params': {
-                'git': '{{git}}' if not save_env_yaml else '{{some_tag}}',
+        'tasks': [
+            {
+                'source': str(Path('tasks', 'script.py')),
+                'product': {
+                    'nb': str(Path('out', 'nb.html')),
+                    'data': str(Path('out', 'data.csv')),
+                },
+                'params': {
+                    'git': '{{some_tag}}' if save_env_yaml else '{{git}}'
+                },
             }
-        }]
+        ]
     }
 
     Path('pipeline.yaml').write_text(yaml.dump(spec_dict))
@@ -898,16 +901,18 @@ def test_git_placeholder_and_not_in_git_repository(tmp_directory,
             yaml.dump({'some_tag': '{{git}}'}, f)
 
     spec_dict = {
-        'tasks': [{
-            'source': str(Path('tasks', 'script.py')),
-            'product': {
-                'nb': str(Path('out', 'nb.html')),
-                'data': str(Path('out', 'data.csv')),
-            },
-            'params': {
-                'git': '{{git}}' if not save_env_yaml else '{{some_tag}}',
+        'tasks': [
+            {
+                'source': str(Path('tasks', 'script.py')),
+                'product': {
+                    'nb': str(Path('out', 'nb.html')),
+                    'data': str(Path('out', 'data.csv')),
+                },
+                'params': {
+                    'git': '{{some_tag}}' if save_env_yaml else '{{git}}'
+                },
             }
-        }]
+        ]
     }
 
     Path('pipeline.yaml').write_text(yaml.dump(spec_dict))
@@ -920,10 +925,7 @@ def test_git_placeholder_and_not_in_git_repository(tmp_directory,
     assert expected in str(excinfo.value)
 
 
-@pytest.mark.parametrize('method, kwargs', [
-    [None, dict(data='pipeline.yaml')],
-    ['find', dict()],
-])
+@pytest.mark.parametrize('method, kwargs', [[None, dict(data='pipeline.yaml')], ['find', {}]])
 def test_passing_env_in_class_methods(method, kwargs, tmp_directory):
 
     spec_dict = {
@@ -939,11 +941,7 @@ def test_passing_env_in_class_methods(method, kwargs, tmp_directory):
     with open('pipeline.yaml', 'w') as f:
         yaml.dump(spec_dict, f)
 
-    if method:
-        callable_ = getattr(DAGSpec, method)
-    else:
-        callable_ = DAGSpec
-
+    callable_ = getattr(DAGSpec, method) if method else DAGSpec
     spec = callable_(**kwargs, env={'key': 'value'})
 
     assert spec['tasks'][0]['params']['some_param'] == 'value'
@@ -1518,7 +1516,7 @@ def test_doesnt_warn_if_param_declared_in_env_is_used_in_spec():
     message = ("The following placeholders are declared in the "
                "environment but unused in the spec")
 
-    assert not any(message in str(r.message) for r in record)
+    assert all(message not in str(r.message) for r in record)
 
 
 def test_doesnt_warn_if_param_is_used_in_import_task_from(tmp_directory):

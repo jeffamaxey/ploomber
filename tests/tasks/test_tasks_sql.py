@@ -59,7 +59,7 @@ def test_sqldump_does_not_required_product_tag(tmp_directory):
 
     # create a db
     conn = connect(str(tmp / "database.db"))
-    client = SQLAlchemyClient('sqlite:///{}'.format(tmp / "database.db"))
+    client = SQLAlchemyClient(f'sqlite:///{tmp / "database.db"}')
     # dump output path
     out = tmp / 'dump'
 
@@ -89,7 +89,7 @@ def test_can_dump_sqlite_to_csv(tmp_directory):
 
     # create a db
     conn = connect(str(tmp / "database.db"))
-    client = SQLAlchemyClient('sqlite:///{}'.format(tmp / "database.db"))
+    client = SQLAlchemyClient(f'sqlite:///{tmp / "database.db"}')
     # dump output path
     out = tmp / 'dump'
 
@@ -154,7 +154,7 @@ def test_can_dump_sqlite_to_parquet(tmp_directory):
 
     # create a db
     conn = connect(str(tmp / "database.db"))
-    client = SQLAlchemyClient('sqlite:///{}'.format(tmp / "database.db"))
+    client = SQLAlchemyClient(f'sqlite:///{tmp / "database.db"}')
     # dump output path
     out = tmp / 'dump'
 
@@ -258,7 +258,7 @@ def test_sql_runtime_params(tmp_directory):
 def test_sql_dump_shows_executed_code_if_fails(tmp_directory):
     tmp = Path(tmp_directory)
 
-    client = SQLAlchemyClient('sqlite:///{}'.format(tmp / "database.db"))
+    client = SQLAlchemyClient(f'sqlite:///{tmp / "database.db"}')
 
     dag = DAG()
 
@@ -349,7 +349,7 @@ def test_can_transfer_sqlite(tmp_directory):
     tmp = Path(tmp_directory)
 
     # create clientections to 2 dbs
-    client_in = SQLAlchemyClient('sqlite:///{}'.format(tmp / "database_in.db"))
+    client_in = SQLAlchemyClient(f'sqlite:///{tmp / "database_in.db"}')
     client_out = SQLAlchemyClient('sqlite:///{}'.format(tmp /
                                                         "database_out.db"))
 

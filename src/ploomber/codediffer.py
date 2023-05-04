@@ -89,11 +89,8 @@ def diff_strings(a, b):
 
     out = ''
 
-    if a is None:
+    if a is None or b is None:
         out += '[a is None]\n'
-    elif b is None:
-        out += '[a is None]\n'
-
     a = '' if a is None else a
     b = '' if b is None else b
 

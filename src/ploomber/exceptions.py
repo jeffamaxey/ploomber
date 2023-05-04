@@ -183,12 +183,7 @@ class SpecValidationError(Exception):
     def __str__(self):
         n_errors = len(self.errors)
 
-        msg = (f'{n_errors} error{"" if n_errors == 1 else "s"} found '
-               f'when validating {self.model.__name__} with values '
-               f'{self.kwargs}\n\n'
-               f'{display_errors(self.errors)}')
-
-        return msg
+        return f'{n_errors} error{"" if n_errors == 1 else "s"} found when validating {self.model.__name__} with values {self.kwargs}\n\n{display_errors(self.errors)}'
 
 
 class SQLTaskBuildError(TaskBuildError):

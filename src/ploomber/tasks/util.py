@@ -8,9 +8,7 @@ def download_products_in_parallel(tasks):
         future2task = {executor.submit(t.product.download): t for t in tasks}
 
         for future in as_completed(future2task):
-            exception = future.exception()
-
-            if exception:
+            if exception := future.exception():
                 task = future2task[future]
                 raise RuntimeError(
                     'An error occurred when downloading product from '

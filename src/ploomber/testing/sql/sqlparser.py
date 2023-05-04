@@ -56,10 +56,7 @@ def find_with_class(tokens, class_):
 
 
 def get_identifiers_and_select_from_create(create):
-    res = find_with_class(create, class_=sqlparse.sql.IdentifierList)
-
-    # when CREATE TABLE name has no parenthesis...
-    if res:
+    if res := find_with_class(create, class_=sqlparse.sql.IdentifierList):
         idx = find_select(create)
         select = code_from_token_list(strip_punctuation(create.tokens[idx:]))
         return strip(res[1]), select
@@ -157,7 +154,7 @@ class SQLParser:
 
             self.mapping = m
         else:
-            self.mapping = dict()
+            self.mapping = {}
 
     def __getitem__(self, key):
         """Same as .until(key)
@@ -171,8 +168,7 @@ class SQLParser:
         self.mapping[key] = value
 
     def __iter__(self):
-        for e in self.mapping:
-            yield e
+        yield from self.mapping
 
     def __len__(self):
         return len(self.mapping)
@@ -199,14 +195,13 @@ class SQLParser:
 
         if key == '_select':
             _, select = pairs.pop(-1)
-        else:
-            if select is None:
-                select = f'SELECT * FROM {pairs[-1][0]}'
+        elif select is None:
+            select = f'SELECT * FROM {pairs[-1][0]}'
 
-                if limit:
-                    select += f' LIMIT {limit}'
-            else:
-                select = Template(select).render(key=key)
+            if limit:
+                select += f' LIMIT {limit}'
+        else:
+            select = Template(select).render(key=key)
 
         sql = Template("""
 WITH {%- for id,code in pairs -%}{{',' if not loop.first else '' }} {{id}} AS (
@@ -214,7 +209,7 @@ WITH {%- for id,code in pairs -%}{{',' if not loop.first else '' }} {{id}} AS (
 ){% endfor %}
 {{select}}""").render(pairs=pairs, select=select)
 
-        return sql if not parse else type(self)(sql)
+        return type(self)(sql) if parse else sql
 
     @classmethod
     def _with_mapping(cls, mapping):
@@ -225,32 +220,29 @@ WITH {%- for id,code in pairs -%}{{',' if not loop.first else '' }} {{id}} AS (
     def insert_first(self, key, select, inplace=False):
         mapping = {key: select, **self.mapping}
 
-        if inplace:
-            self.mapping = mapping
-            return self
-        else:
+        if not inplace:
             return type(self)._with_mapping(mapping)
+        self.mapping = mapping
+        return self
 
     def insert_last(self, select, inplace=False):
         m = copy(self.mapping)
         m['last'] = m.pop('_select')
         mapping = {**m, '_select': select}
 
-        if inplace:
-            self.mapping = mapping
-            return self
-        else:
+        if not inplace:
             return type(self)._with_mapping(mapping)
+        self.mapping = mapping
+        return self
 
     def replace_last(self, select, inplace=False):
         mapping = copy(self.mapping)
         mapping['_select'] = select
 
-        if inplace:
-            self.mapping = mapping
-            return self
-        else:
+        if not inplace:
             return type(self)._with_mapping(mapping)
+        self.mapping = mapping
+        return self
 
     def __str__(self):
         """Short for .until(key='_select')

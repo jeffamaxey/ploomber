@@ -76,7 +76,7 @@ def test_cell_injection_if_using_notebook_dir_option(tmp_nbs):
     # simulate doing: jupyter lab --notebook-dir path/to/dir
     app.root_dir = str(tmp_nbs.resolve())
 
-    model = app.contents_manager.get(str('plot.py'))
+    model = app.contents_manager.get('plot.py')
 
     assert get_injected_cell(model['content'])
 
@@ -273,7 +273,7 @@ def test_cell_injection_if_using_notebook_dir_option_nested_script(tmp_nbs):
     # simulate doing: jupyter lab --notebook-dir path/to/dir
     app.root_dir = str(Path(tmp_nbs).resolve().parent)
 
-    model = app.contents_manager.get(str('content/plot.py'))
+    model = app.contents_manager.get('content/plot.py')
 
     assert get_injected_cell(model['content'])
 
@@ -314,7 +314,7 @@ def test_injects_cell_if_file_in_dag(tmp_nbs):
 def test_injects_cell_even_if_pipeline_yaml_in_subdirectory(tmp_nbs):
     os.chdir('..')
     cm = PloomberContentsManager()
-    model = cm.get(str('content/plot.py'))
+    model = cm.get('content/plot.py')
     injected = get_injected_cell(model['content'])
     assert injected
 
@@ -339,7 +339,7 @@ tasks:
 
     cm = PloomberContentsManager()
 
-    model = cm.get(str('load.py'))
+    model = cm.get('load.py')
     assert get_injected_cell(model['content'])
 
 
@@ -362,7 +362,7 @@ tasks:
 
     cm = PloomberContentsManager()
 
-    model = cm.get(str('load.py'))
+    model = cm.get('load.py')
     assert get_injected_cell(model['content'])
 
 
@@ -946,7 +946,7 @@ tasks:
 
     cm = PloomberContentsManager()
 
-    model = cm.get(str('load.py'))
+    model = cm.get('load.py')
     assert get_injected_cell(model['content'])
 
 
@@ -974,5 +974,5 @@ tasks:
 
     cm = PloomberContentsManager()
 
-    model = cm.get(str('load.py'))
+    model = cm.get('load.py')
     assert get_injected_cell(model['content'])

@@ -23,9 +23,7 @@ class AbstractMetadata(abc.ABC):
         self.__data = None
         self._product = product
 
-        self._logger = logging.getLogger('{}.{}'.format(
-            __name__,
-            type(self).__name__))
+        self._logger = logging.getLogger(f'{__name__}.{type(self).__name__}')
 
     @property
     @abc.abstractmethod
@@ -100,12 +98,11 @@ class AbstractMetadata(abc.ABC):
     def __eq__(self, other):
         self._fetch()
 
-        if isinstance(other, type(self)):
-            # metadata is lazily loaded, ensure you have a local copy
-            other._fetch()
-            return self._data == other._data
-        else:
+        if not isinstance(other, type(self)):
             return self._data == other
+        # metadata is lazily loaded, ensure you have a local copy
+        other._fetch()
+        return self._data == other._data
 
     def __getstate__(self):
         state = self.__dict__.copy()
@@ -117,9 +114,7 @@ class AbstractMetadata(abc.ABC):
 
     def __setstate__(self, state):
         self.__dict__.update(state)
-        self._logger = logging.getLogger('{}.{}'.format(
-            __name__,
-            type(self).__name__))
+        self._logger = logging.getLogger(f'{__name__}.{type(self).__name__}')
 
     def _fetch(self):
         """Fetches metadata if needed. If already fetched, does nothing
@@ -158,9 +153,7 @@ class Metadata(AbstractMetadata):
         self.__data = None
         self._product = product
 
-        self._logger = logging.getLogger('{}.{}'.format(
-            __name__,
-            type(self).__name__))
+        self._logger = logging.getLogger(f'{__name__}.{type(self).__name__}')
         self._did_fetch = False
 
     @property
@@ -318,13 +311,15 @@ class MetadataCollection(AbstractMetadata):
         # due to metadata corruption, we can no longer compute the timestamp
         # reliable. 2) no timestamps at all happens when the task hasn't been
         # executed
-        if any_none or not timestamps:
+        if any_none:
             # warn on corrupted data
-            if any_none and timestamps:
+            if timestamps:
                 warnings.warn(f'Corrupted product metadata ({self!r}): '
                               'at least one product had a null timestamp, '
                               'but others had non-null timestamp')
 
+            return None
+        elif not timestamps:
             return None
         else:
             # timestamps should usually be very close, but there can be
@@ -339,16 +334,12 @@ class MetadataCollection(AbstractMetadata):
         stored_source_code = [
             p.metadata.stored_source_code for p in self._products
         ]
-        # if source code differs (i.e. more than one element)
-        if len(set(stored_source_code)) > 1:
-            warnings.warn(
-                'Stored source codes for products {} '
-                'are different, but they are part of the same '
-                'MetaProduct, returning stored_source_code as None'.format(
-                    self._products))
-            return None
-        else:
+        if len(set(stored_source_code)) <= 1:
             return stored_source_code[0]
+        warnings.warn(
+            f'Stored source codes for products {self._products} are different, but they are part of the same MetaProduct, returning stored_source_code as None'
+        )
+        return None
 
     @property
     def params(self):
@@ -376,7 +367,7 @@ class MetadataCollection(AbstractMetadata):
 
     def to_dict(self):
         products = list(self._products)
-        source = set(p.metadata.stored_source_code for p in products)
+        source = {p.metadata.stored_source_code for p in products}
         large_diff = large_timestamp_difference(p.metadata.timestamp
                                                 for p in products)
 
@@ -393,7 +384,7 @@ class MetadataCollection(AbstractMetadata):
     @property
     def _data(self):
         products = list(self._products)
-        source = set(p.metadata.stored_source_code for p in products)
+        source = {p.metadata.stored_source_code for p in products}
         large_diff = large_timestamp_difference(p.metadata.timestamp
                                                 for p in products)
 

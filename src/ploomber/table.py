@@ -84,11 +84,7 @@ class Table:
     def __init__(self, rows, column_width='auto'):
         self.column_width = column_width
 
-        if isinstance(rows, list):
-            self._values = rows2columns(rows)
-        else:
-            self._values = rows
-
+        self._values = rows2columns(rows) if isinstance(rows, list) else rows
         self._values = self.data_preprocessing(self._values)
 
         self._str = None
@@ -123,8 +119,7 @@ class Table:
             return self.values[key]
 
     def __iter__(self):
-        for col in self.values:
-            yield col
+        yield from self.values
 
     def __len__(self):
         return len(self._values.keys())
@@ -187,10 +182,7 @@ class BuildReport(Table):
         total = sum(elapsed)
 
         def compute_pct(elapsed, total):
-            if not elapsed:
-                return 0
-            else:
-                return 100 * elapsed / total
+            return 100 * elapsed / total if elapsed else 0
 
         values['Percentage'] = [compute_pct(r, total) for r in elapsed]
 
@@ -203,11 +195,12 @@ def rows2columns(rows):
     if not len(rows):
         return {}
 
-    cols_combinations = set(tuple(sorted(row.columns)) for row in rows)
+    cols_combinations = {tuple(sorted(row.columns)) for row in rows}
 
     if len(cols_combinations) > 1:
-        raise KeyError('All rows should have the same columns, got: '
-                       '{}'.format(cols_combinations))
+        raise KeyError(
+            f'All rows should have the same columns, got: {cols_combinations}'
+        )
 
     columns = rows[0].columns
 
@@ -252,10 +245,7 @@ def separator_width(header_length, max_value_length):
     """
     n_value_extra = header_length - max_value_length
 
-    if n_value_extra >= -2:
-        return header_length + 2
-    else:
-        return max_value_length
+    return header_length + 2 if n_value_extra >= -2 else max_value_length
 
 
 def width_required_for_column(header, values):
@@ -264,7 +254,7 @@ def width_required_for_column(header, values):
     extra characters that the tabulate package adds to the header when the
     content is too short
     """
-    values_max = -1 if not values else max(len(str(v)) for v in values)
+    values_max = max(len(str(v)) for v in values) if values else -1
     return max(values_max, separator_width(len(header), values_max))
 
 
@@ -280,25 +270,17 @@ def calculate_wrapping(table_dict, do_not_wrap, width_total):
         for header, values in table_dict.items()
     }
 
-    # TODO: pass set(table_dict) instead of table_dict
-    column_width = _calculate_wrapping(table_dict, do_not_wrap, width_total,
-                                       width_required)
-
-    return column_width
+    return _calculate_wrapping(
+        table_dict, do_not_wrap, width_total, width_required
+    )
 
 
 def _calculate_wrapping(table_dict, do_not_wrap, width_total, width_required):
-    width_offset = 0
-
-    # how much space we are already taking by not wrapping columns in
-    # do_not_wrap
-    for col_name in do_not_wrap:
-        # edge case: key might not exist if the dag is empty col_name
-        # is added during Tabble.data_preprocessing (e.g.,) the "Ran?"" column
-        # in a build report
-        if col_name in width_required:
-            width_offset += width_required[col_name]
-
+    width_offset = sum(
+        width_required[col_name]
+        for col_name in do_not_wrap
+        if col_name in width_required
+    )
     # how much we have left - takes into account the bweteen-column spacing
     # of two characters
     width_remaining = (width_total - width_offset -

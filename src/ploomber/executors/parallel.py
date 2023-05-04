@@ -35,8 +35,7 @@ class TaskBuildWrapper:
 
     def __call__(self, *args, **kwargs):
         try:
-            output = self.task._build(**kwargs)
-            return output
+            return self.task._build(**kwargs)
         except Exception as e:
             return Message(task=self.task, message=_format.exception(e), obj=e)
 
@@ -167,7 +166,7 @@ class Parallel(Executor):
                     return task
                 # there might be some up-to-date tasks, add them
 
-            set_done = set([t.name for t in done])
+            set_done = {t.name for t in done}
 
             if not self._i % 50000:
                 _log(f'Finished tasks so far: {set_done or ""}',
@@ -207,12 +206,7 @@ class Parallel(Executor):
                         started.append(task)
                         self._logger.info('Added %s to the pool...', task.name)
 
-        results = [
-            # results are the output of Task._build: (report, metadata)
-            # OR a Message
-            get_future_result(f, future_mapping)
-            for f in future_mapping.keys()
-        ]
+        results = [get_future_result(f, future_mapping) for f in future_mapping]
 
         exps = [r for r in results if isinstance(r, Message)]
 
@@ -238,5 +232,4 @@ def get_future_result(future, future_mapping):
     try:
         return future.result()
     except BrokenProcessPool as e:
-        raise BrokenProcessPool('Broken pool {}'.format(
-            future_mapping[future])) from e
+        raise BrokenProcessPool(f'Broken pool {future_mapping[future]}') from e

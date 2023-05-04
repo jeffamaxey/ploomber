@@ -111,9 +111,8 @@ class TerminalWriter:
         for name in markup:
             if name not in self._esctable:
                 raise ValueError("unknown markup: {!r}".format(name))
-        if self.hasmarkup:
-            esc = [self._esctable[name] for name, on in markup.items() if on]
-            if esc:
+        if esc := [self._esctable[name] for name, on in markup.items() if on]:
+            if self.hasmarkup:
                 text = "".join("\x1b[%sm" % cod
                                for cod in esc) + text + "\x1b[0m"
         return text
@@ -140,7 +139,7 @@ class TerminalWriter:
             #         N <= (fullwidth - len(title) - 2) // (2*len(sepchar))
             N = max((fullwidth - len(title) - 2) // (2 * len(sepchar)), 1)
             fill = sepchar * N
-            line = "{} {} {}".format(fill, title, fill)
+            line = f"{fill} {title} {fill}"
         else:
             # we want len(sepchar)*N <= fullwidth
             # i.e.    N <= fullwidth // len(sepchar)
@@ -200,8 +199,8 @@ class TerminalWriter:
         """
         if indents and len(indents) != len(lines):
             raise ValueError(
-                "indents size ({}) should have same size as lines ({})".format(
-                    len(indents), len(lines)))
+                f"indents size ({len(indents)}) should have same size as lines ({len(lines)})"
+            )
         if not indents:
             indents = [""] * len(lines)
         source = "\n".join(lines)
@@ -225,6 +224,4 @@ class TerminalWriter:
             return source
         else:
             Lexer = PythonLexer if lexer == 'py' else PythonTracebackLexer
-            highlighted = highlight(source, Lexer(),
-                                    TerminalFormatter(bg="dark"))  # type: str
-            return highlighted
+            return highlight(source, Lexer(), TerminalFormatter(bg="dark"))

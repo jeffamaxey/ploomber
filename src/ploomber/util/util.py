@@ -69,13 +69,7 @@ def requires(pkgs, name=None, extra_msg=None, pip_names=None):
 def _make_requires_error_message(missing_pkgs, fn_name, extra_msg):
     names_str = ' '.join(repr(pkg) for pkg in missing_pkgs)
 
-    error_msg = ('{} {} required to use {}. Install with: '
-                 'pip install {}'.format(
-                     names_str,
-                     'is' if len(missing_pkgs) == 1 else 'are',
-                     repr(fn_name),
-                     names_str,
-                 ))
+    error_msg = f"{names_str} {'is' if len(missing_pkgs) == 1 else 'are'} required to use {repr(fn_name)}. Install with: pip install {names_str}"
 
     if extra_msg:
         error_msg += ('\n' + extra_msg)
@@ -86,10 +80,9 @@ def _make_requires_error_message(missing_pkgs, fn_name, extra_msg):
 def check_mixed_envs(env_dependencies):
     # see: https://github.com/ploomber/soopervisor/issues/67
     env_dependencies = env_dependencies.split("\n")
-    problematic_dependencies = [
+    if problematic_dependencies := [
         dep for dep in env_dependencies if ' @ file://' in dep
-    ]
-    if problematic_dependencies:
+    ]:
         warnings.warn("Found pip dependencies installed from local files.\n"
                       "This usually happens when using conda and pip"
                       " in the same environment, this will break "
@@ -109,8 +102,7 @@ def safe_remove(path):
 def image_bytes2html(data):
     fig_base64 = base64.encodebytes(data)
     img = fig_base64.decode("utf-8")
-    html = '<img src="data:image/png;base64,' + img + '"></img>'
-    return html
+    return f'<img src="data:image/png;base64,{img}"></img>'
 
 
 def isiterable(obj):
@@ -179,10 +171,9 @@ def callback_check(fn, available, allow_default=True):
     fn_name = getattr(fn, '__name__', fn)
 
     if optional and not allow_default:
-        raise CallbackSignatureError('Callback functions cannot have '
-                                     'parameters with default values, '
-                                     'got: {} in "{}"'.format(
-                                         optional, fn_name))
+        raise CallbackSignatureError(
+            f'Callback functions cannot have parameters with default values, got: {optional} in "{fn_name}"'
+        )
 
     required = {
         name
@@ -191,13 +182,10 @@ def callback_check(fn, available, allow_default=True):
     }
 
     available_set = set(available)
-    extra = required - available_set
-
-    if extra:
-        raise CallbackSignatureError('Callback function "{}" unknown '
-                                     'parameter(s): {}, available ones are: '
-                                     '{}'.format(fn_name, extra,
-                                                 available_set))
+    if extra := required - available_set:
+        raise CallbackSignatureError(
+            f'Callback function "{fn_name}" unknown parameter(s): {extra}, available ones are: {available_set}'
+        )
 
     return {k: v for k, v in available_raw.items() if k in required}
 
@@ -233,18 +221,16 @@ def signature_check(fn, params, task_name):
         errors.append('Verify this task declared upstream depedencies or '
                       'remove the "upstream" argument from the function')
 
-    missing_except_upstream = sorted(missing - {'upstream'})
-
-    if missing_except_upstream:
+    if missing_except_upstream := sorted(missing - {'upstream'}):
         errors.append(f'Pass {missing_except_upstream} in "params"')
 
     if extra or missing:
         msg = '. '.join(errors)
         # not all functions have __name__ (e.g. partials)
         fn_name = getattr(fn, '__name__', fn)
-        raise TaskRenderError('Error rendering task "{}" initialized with '
-                              'function "{}". {}'.format(
-                                  task_name, fn_name, msg))
+        raise TaskRenderError(
+            f'Error rendering task "{task_name}" initialized with function "{fn_name}". {msg}'
+        )
 
     return True
 

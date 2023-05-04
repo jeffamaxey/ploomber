@@ -182,7 +182,7 @@ def test_error_on_corrupted_metadata(tmp_directory):
 
 def test_error_when_initializing_with_obj_other_than_str_or_path():
     with pytest.raises(TypeError) as excinfo:
-        File(dict())
+        File({})
 
     msg = 'File must be initialized with a str or a pathlib.Path'
     assert str(excinfo.value) == msg
@@ -325,8 +325,7 @@ def test_task_with_client_is_not_outdated_returns_waiting_download(
 
     assert dag['root'].product._is_outdated() == TaskStatus.WaitingDownload
     assert dag['task'].product._is_outdated() == TaskStatus.WaitingDownload
-    assert set(v.exec_status
-               for v in dag.values()) == {TaskStatus.WaitingDownload}
+    assert {v.exec_status for v in dag.values()} == {TaskStatus.WaitingDownload}
 
 
 @pytest.mark.parametrize('operation', [_edit_source_code, _delete_metadata])
@@ -348,8 +347,7 @@ def test_task_with_client_and_metaproduct_isnt_outdated_rtrns_waiting_download(
 
     assert dag['root'].product._is_outdated() == TaskStatus.WaitingDownload
     assert dag['task'].product._is_outdated() == TaskStatus.WaitingDownload
-    assert set(v.exec_status
-               for v in dag.values()) == {TaskStatus.WaitingDownload}
+    assert {v.exec_status for v in dag.values()} == {TaskStatus.WaitingDownload}
 
 
 @pytest.mark.parametrize('operation', [_edit_source_code, _delete_metadata])

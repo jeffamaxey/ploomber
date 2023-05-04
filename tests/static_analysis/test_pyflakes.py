@@ -210,41 +210,24 @@ def test_is_ipython_cell_magic(code, expected):
     assert pyflakes._is_ipython_cell_magic(code) == expected
 
 
-@pytest.mark.parametrize('params, source, first, second', [
-    [
+@pytest.mark.parametrize('params, source, first, second', [[
         dict(a=1),
         '',
         "Unexpected params: 'a'",
         "to fix this, add 'a'",
-    ],
-    [
+    ], [
         dict(a=1, b=2),
         '',
         "Unexpected params: 'a', and 'b'",
         "to fix this, add them",
-    ],
-    [
-        dict(),
-        'a = None\n b = None',
-        "Missing params: 'a', and 'b'",
-        "to fix this, pass them",
-    ],
-    [
-        dict(),
-        'a = None',
-        "Missing params: 'a'",
-        "to fix this, pass 'a'",
-    ],
-    [
+    ], [{}, 'a = None\n b = None', "Missing params: 'a', and 'b'", "to fix this, pass them"], [{}, 'a = None', "Missing params: 'a'", "to fix this, pass 'a'"], [
         dict(a=1),
         'b = None',
         "Missing params: 'b' (to fix this, pass 'b' in the 'params' "
         "argument).",
         "Unexpected params: 'a' (to fix this, add 'a' to the "
         "'parameters' cell and assign the value as None. e.g., a = None).",
-    ],
-],
-                         ids=[
+    ]], ids=[
                              'one-unexpected',
                              'many-unexpected',
                              'many-missing',

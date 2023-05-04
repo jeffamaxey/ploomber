@@ -49,7 +49,7 @@ class ModelFromDAG(BaseModel):
 class ModelFromInvalidType(BaseModel):
     @staticmethod
     def get_partial():
-        return dict()
+        return {}
 
 
 @pytest.mark.parametrize('class_', [ModelFromSpec, ModelFromDAG])

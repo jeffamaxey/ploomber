@@ -112,20 +112,15 @@ class PythonCallable(Task):
 
         # do not pass product if serializer is set, we'll use the returned
         # value in such case
-        if self._serializer:
-            product = params.pop('product')
-        else:
-            product = params['product']
-
+        product = params.pop('product') if self._serializer else params['product']
         # call function
         out = self.source.primitive(**params)
 
-        # serialize output if needed
         if self._serializer:
             if out is None:
-                raise ValueError('Callable {} must return a value if task '
-                                 'is initialized with a serializer'.format(
-                                     self.source.primitive))
+                raise ValueError(
+                    f'Callable {self.source.primitive} must return a value if task is initialized with a serializer'
+                )
             else:
                 self._serializer(out, product)
 
@@ -154,15 +149,12 @@ class PythonCallable(Task):
         apps = {'notebook', 'lab'}
 
         if app not in apps:
-            raise ValueError('"app" must be one of {}, got: "{}"'.format(
-                apps, app))
+            raise ValueError(f'"app" must be one of {apps}, got: "{app}"')
 
         if self.exec_status == TaskStatus.WaitingRender:
             raise TaskBuildError(
-                'Error in task "{}". '
-                'Cannot call task.develop() on a task that has '
-                'not been '
-                'rendered, call DAG.render() first'.format(self.name))
+                f'Error in task "{self.name}". Cannot call task.develop() on a task that has not been rendered, call DAG.render() first'
+            )
 
         with self._interactive_developer() as tmp:
             try:
@@ -198,15 +190,12 @@ class PythonCallable(Task):
         opts = {'ipdb', 'pdb'}
 
         if kind not in opts:
-            raise ValueError('"kind" must be one of {}, got: "{}"'.format(
-                opts, kind))
+            raise ValueError(f'"kind" must be one of {opts}, got: "{kind}"')
 
         if self.exec_status == TaskStatus.WaitingRender:
-            raise TaskBuildError('Error in task "{}". '
-                                 'Cannot call task.debug() on a task that has '
-                                 'not been '
-                                 'rendered, call DAG.render() first'.format(
-                                     self.name))
+            raise TaskBuildError(
+                f'Error in task "{self.name}". Cannot call task.debug() on a task that has not been rendered, call DAG.render() first'
+            )
 
         if 'upstream' in self.params and self._unserializer:
             params = _unserialize_params(self.params, self._unserializer)
@@ -245,7 +234,7 @@ class PythonCallable(Task):
             raise ValueError(f'Task {self!r} generates multiple products, '
                              'use the "key" argument to load one')
 
-        prod = self.product if not key else self.product[key]
+        prod = self.product[key] if key else self.product
 
         if self._unserializer is not None:
             return self._unserializer(str(prod), **kwargs)
@@ -260,7 +249,7 @@ def task_factory(_func=None, **factory_kwargs):
     def decorator(func):
         @functools.wraps(func)
         def wrapper(**wrapper_kwargs):
-            kwargs = {**factory_kwargs, **wrapper_kwargs}
+            kwargs = factory_kwargs | wrapper_kwargs
             return PythonCallable(func, **kwargs)
 
         return wrapper
@@ -400,9 +389,9 @@ class Link(Task):
         self.product._outdated_code_dependency = self._false
 
         if not self.product.exists():
-            raise RuntimeError('Link tasks should point to Products that '
-                               'already exist. "{}" task product "{}" does '
-                               'not exist'.format(self.name, self.product))
+            raise RuntimeError(
+                f'Link tasks should point to Products that already exist. "{self.name}" task product "{self.product}" does not exist'
+            )
 
     def run(self):
         pass
@@ -452,9 +441,9 @@ class Input(Task):
         self.product._outdated_code_dependency = self._true
 
         if not self.product.exists():
-            raise RuntimeError('Input tasks should point to Products that '
-                               'already exist. "{}" task product "{}" does '
-                               'not exist'.format(self.name, self.product))
+            raise RuntimeError(
+                f'Input tasks should point to Products that already exist. "{self.name}" task product "{self.product}" does not exist'
+            )
 
     def run(self):
         pass

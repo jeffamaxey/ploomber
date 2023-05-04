@@ -49,7 +49,7 @@ class PlaceholderSource(abc.Source):
             type(self).__name__, self._placeholder.best_repr(shorten=True))
 
         if self._placeholder.path:
-            repr_ += ' Loaded from: {}'.format(self._placeholder.path)
+            repr_ += f' Loaded from: {self._placeholder.path}'
 
         return repr_
 
@@ -122,7 +122,7 @@ class SQLScriptSource(SQLSourceMixin, PlaceholderSource):
                 product_relations = {params['product']}
             else:
                 # metaproduct
-                product_relations = {p for p in params['product']}
+                product_relations = set(params['product'])
 
             inferred_n = len(inferred_relations)
             actual_n = len(product_relations)

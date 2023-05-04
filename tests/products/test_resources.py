@@ -37,10 +37,7 @@ def test_process_resources(tmp_directory, params, expected):
     assert process_resources(params) == expected
 
 
-@pytest.mark.parametrize('fn, kwargs', [
-    [process_resources, dict()],
-    [resolve_resources, dict(relative_to='')],
-])
+@pytest.mark.parametrize('fn, kwargs', [[process_resources, {}], [resolve_resources, dict(relative_to='')]])
 def test_error_on_incorrect_resources_value_type(fn, kwargs):
     with pytest.raises(TypeError) as excinfo:
         fn({'resources_': {'file': 1}}, **kwargs)
@@ -59,10 +56,7 @@ def test_error_on_missing_file_in_process_resources_value(tmp_directory):
     assert str(excinfo.value) == expected
 
 
-@pytest.mark.parametrize('fn, kwargs', [
-    [process_resources, dict()],
-    [resolve_resources, dict(relative_to='')],
-])
+@pytest.mark.parametrize('fn, kwargs', [[process_resources, {}], [resolve_resources, dict(relative_to='')]])
 def test_error_if_resources_key_isnt_a_dictionary(fn, kwargs):
     with pytest.raises(TypeError) as excinfo:
         fn({'resources_': 1}, **kwargs)
@@ -73,10 +67,7 @@ def test_error_if_resources_key_isnt_a_dictionary(fn, kwargs):
     assert str(excinfo.value) == expected
 
 
-@pytest.mark.parametrize('fn, kwargs', [
-    [process_resources, dict()],
-    [resolve_resources, dict(relative_to='')],
-])
+@pytest.mark.parametrize('fn, kwargs', [[process_resources, {}], [resolve_resources, dict(relative_to='')]])
 def test_returned_object_is_a_deep_copy(fn, kwargs):
     nested = {'a': 1}
     in_ = {'key': nested}
@@ -86,10 +77,7 @@ def test_returned_object_is_a_deep_copy(fn, kwargs):
     assert out['key'] is not nested
 
 
-@pytest.mark.parametrize('fn, kwargs', [
-    [process_resources, dict()],
-    [resolve_resources, dict(relative_to='')],
-])
+@pytest.mark.parametrize('fn, kwargs', [[process_resources, {}], [resolve_resources, dict(relative_to='')]])
 def test_returns_none_if_input_is_none(fn, kwargs):
     assert fn(None, **kwargs) is None
 

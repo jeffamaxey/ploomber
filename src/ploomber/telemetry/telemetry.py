@@ -121,10 +121,7 @@ def get_os():
     The function will output the client platform
     """
     os = platform.system()
-    if os == "Darwin":
-        return 'MacOS'
-    else:  # Windows/Linux are contained
-        return os
+    return 'MacOS' if os == "Darwin" else os
 
 
 def is_conda():
@@ -201,16 +198,14 @@ def clean_tasks_upstream_products(input):
 
 def parse_dag(dag):
     try:
-        dag_dict = {}
-        dag_dict["dag_size"] = str(len(dag))
-        tasks_list = list(dag)
-        if tasks_list:
+        dag_dict = {"dag_size": str(len(dag))}
+        if tasks_list := list(dag):
             dag_dict["tasks"] = {}
             for task in tasks_list:
-                task_dict = {}
-                task_dict["status"] = dag[task]._exec_status.name
-                task_dict["type"] = str(type(
-                    dag[task])).split(".")[-1].split("'")[0]
+                task_dict = {
+                    "status": dag[task]._exec_status.name,
+                    "type": str(type(dag[task])).split(".")[-1].split("'")[0],
+                }
                 task_dict["upstream"] = clean_tasks_upstream_products(
                     dag[task].upstream)
                 task_dict["products"] = clean_tasks_upstream_products(
@@ -237,11 +232,7 @@ def check_dir_exist(input_location=None):
     """
     home_dir = get_home_dir()
 
-    if input_location:
-        p = Path(home_dir, input_location)
-    else:
-        p = Path(home_dir)
-
+    p = Path(home_dir, input_location) if input_location else Path(home_dir)
     p = p.expanduser()
 
     if not p.exists():
@@ -285,8 +276,7 @@ def get_latest_version():
         conn.request("GET", "/pypi/ploomber/json")
         content = conn.getresponse().read()
         data = json.loads(content)
-        latest = data['info']['version']
-        return latest
+        return data['info']['version']
     except Exception:
         return __version__
     finally:
@@ -407,24 +397,19 @@ def log_api(action, client_time=None, total_runtime=None, metadata=None):
     docker_container = is_docker()
     cloud = is_cloud_user()
     email = email_registered()
-    colab = is_colab()
-    if colab:
+    if colab := is_colab():
         metadata['colab'] = colab
 
-    paperspace = is_paperspace()
-    if paperspace:
+    if paperspace := is_paperspace():
         metadata['paperspace'] = paperspace
 
-    slurm = is_slurm()
-    if slurm:
+    if slurm := is_slurm():
         metadata['slurm'] = slurm
 
-    airflow = is_airflow()
-    if airflow:
+    if airflow := is_airflow():
         metadata['airflow'] = airflow
 
-    argo = is_argo()
-    if argo:
+    if argo := is_argo():
         metadata['argo'] = argo
 
     if 'dag' in metadata:
@@ -473,15 +458,12 @@ def log_call(action, payload=False):
     def _log_call(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            _payload = dict()
+            _payload = {}
             log_api(action=f'{action}-started', metadata={'argv': sys.argv})
             start = datetime.datetime.now()
 
             try:
-                if payload:
-                    result = func(_payload, *args, **kwargs)
-                else:
-                    result = func(*args, **kwargs)
+                result = func(_payload, *args, **kwargs) if payload else func(*args, **kwargs)
             except Exception as e:
                 log_api(
                     action=f'{action}-error',

@@ -258,7 +258,7 @@ def keep_cell(cell):
 
 
 def indent_line(lline):
-    return '    ' + lline if lline else ''
+    return f'    {lline}' if lline else ''
 
 
 def indent_cell(code):
@@ -321,12 +321,8 @@ def extract_imports_top(module, lines):
     ch = module.children[0]
 
     while True:
-        if ch:
-            if not has_import(ch):
-                break
-        else:
+        if ch and not has_import(ch) or not ch:
             break
-
         ch = ch.get_next_sibling()
 
     line, _ = ch.start_pos
@@ -342,10 +338,7 @@ def has_import(stmt):
     """
     Check if statement contains an import
     """
-    for ch in stmt.children:
-        if ch.type in {'import_name', 'import_from'}:
-            return True
-    return False
+    return any(ch.type in {'import_name', 'import_from'} for ch in stmt.children)
 
 
 def trailing_newlines(s):
@@ -374,12 +367,11 @@ def get_func_and_class_names(module):
 
 def make_import_from_definitions(module, fn):
     module_name = inspect.getmodule(fn).__name__
-    names = [
-        name for name in get_func_and_class_names(module)
+    if names := [
+        name
+        for name in get_func_and_class_names(module)
         if name != fn.__name__
-    ]
-
-    if names:
+    ]:
         names_all = ', '.join(names)
         return f'from {module_name} import {names_all}'
 
@@ -482,14 +474,14 @@ def split_statement(statement):
 
 
 def indentation_idx(line):
-    idx = len(line) - len(line.lstrip())
-    return idx
+    return len(line) - len(line.lstrip())
 
 
 def upstream_in_func_signature(source):
     _, params = _get_func_def_and_params(source)
-    return 'upstream' in set(p.name.get_code().strip() for p in params
-                             if p.type == 'param')
+    return 'upstream' in {
+        p.name.get_code().strip() for p in params if p.type == 'param'
+    }
 
 
 def add_upstream_to_func_signature(source):

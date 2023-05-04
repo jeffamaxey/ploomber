@@ -86,6 +86,7 @@ class DAGConfiguration:
         # prevent non-existing parameters from being created
         attr_name = key[1:] if key.startswith('_') else key
         if attr_name not in self.__attrs:
-            raise AttributeError('"{}" is not a valid parameter, must be '
-                                 'one of: {}'.format(key, self.__attrs))
+            raise AttributeError(
+                f'"{key}" is not a valid parameter, must be one of: {self.__attrs}'
+            )
         super().__setattr__(key, value)

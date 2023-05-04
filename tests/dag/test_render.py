@@ -86,8 +86,7 @@ def test_dag_render_step_by_step():
 
     (t21 + t22) >> t3
 
-    assert (set(t.exec_status
-                for t in dag.values()) == {TaskStatus.WaitingRender})
+    assert {t.exec_status for t in dag.values()} == {TaskStatus.WaitingRender}
 
     t1.render()
 
@@ -131,8 +130,7 @@ def test_dag_render_step_by_step_w_skipped(tmp_directory):
 
     (t21 + t22) >> t3
 
-    assert (set(t.exec_status
-                for t in dag.values()) == {TaskStatus.WaitingRender})
+    assert {t.exec_status for t in dag.values()} == {TaskStatus.WaitingRender}
 
     dag.render()
     t1.build()
@@ -374,7 +372,7 @@ def test_render_remote(factory, tmp_directory):
     dag = factory()
     dag.render(remote=True)
 
-    assert set(t.exec_status for t in dag.values()) == {TaskStatus.Skipped}
+    assert {t.exec_status for t in dag.values()} == {TaskStatus.Skipped}
 
 
 def test_render_remote_checks_remote_timestamp(tmp_directory):

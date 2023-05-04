@@ -397,17 +397,15 @@ def test_error_if_required_keys_not_in_task_kwargs():
     dag = DAG()
 
     with pytest.raises(KeyError) as excinfo:
-        TaskGroup.from_params(PythonCallable,
-                              File,
-                              'file.txt',
-                              dict(),
-                              dag,
-                              name='task_group',
-                              params_array=[{
-                                  'param': 1
-                              }, {
-                                  'param': 2
-                              }])
+        TaskGroup.from_params(
+            PythonCallable,
+            File,
+            'file.txt',
+            {},
+            dag,
+            name='task_group',
+            params_array=[{'param': 1}, {'param': 2}],
+        )
 
     assert 'should be in task_kwargs' in str(excinfo.value)
 

@@ -286,8 +286,7 @@ def test_use_venv_even_if_conda_installed(tmp_directory, mock_main):
 
 
 def mocked_get_now():
-    dt = datetime.datetime(2021, 1, 1, 10, 10, 10)
-    return dt
+    return datetime.datetime(2021, 1, 1, 10, 10, 10)
 
 
 @pytest.mark.parametrize('has_conda, use_lock, env, env_lock, reqs, reqs_lock',
@@ -319,7 +318,7 @@ def test_install_with_conda(tmp_directory, has_conda, use_lock, env, env_lock,
     mock.patch(install_module, 'datetime', side_effect=mocked_get_now)
     monkeypatch.setattr(install_module, 'main_conda', mock)
     start = mocked_get_now()
-    install_module.main_conda(start, True if use_lock else False)
+    install_module.main_conda(start, bool(use_lock))
     inputs_args, kwargs = mock.call_args
 
     assert inputs_args[0] == start
@@ -363,7 +362,7 @@ def test_install_with_pip(tmp_directory, has_conda, use_lock, env, env_lock,
     monkeypatch.setattr(install_module, 'main_pip', mock)
     mock.patch(install_module, 'datetime', side_effect=mocked_get_now)
     start = mocked_get_now()
-    install_module.main_pip(start, True if use_lock else False)
+    install_module.main_pip(start, bool(use_lock))
     inputs_args, kwargs = mock.call_args
 
     assert inputs_args[0] == start
@@ -693,8 +692,7 @@ def test_install_package_conda(tmp_directory, mock_cmdr_wrapped):
 
     # check first argument is the path to the conda binary instead of just
     # "conda" since we discovered that fails sometimes on Windows
-    assert all(
-        [Path(c[0][0]).is_file() for c in mock_cmdr_wrapped.call_args_list])
+    assert all(Path(c[0][0]).is_file() for c in mock_cmdr_wrapped.call_args_list)
 
     assert set(os.listdir()) == {
         'environment.yml',
@@ -721,8 +719,7 @@ def test_install_non_package_with_conda(tmp_directory, monkeypatch,
 
     # check first argument is the path to the conda binary instead of just
     # "conda" since we discovered that fails sometimes on Windows
-    assert all(
-        [Path(c[0][0]).is_file() for c in mock_cmdr_wrapped.call_args_list])
+    assert all(Path(c[0][0]).is_file() for c in mock_cmdr_wrapped.call_args_list)
 
     assert set(os.listdir()) == {'environment.yml', 'environment.lock.yml'}
 
@@ -785,8 +782,7 @@ def test_install_lock_non_package_with_conda(
         expected.pop(-1)
 
     assert mock_cmdr_wrapped.call_args_list == expected
-    assert all(
-        [Path(c[0][0]).is_file() for c in mock_cmdr_wrapped.call_args_list])
+    assert all(Path(c[0][0]).is_file() for c in mock_cmdr_wrapped.call_args_list)
 
 
 @pytest.mark.parametrize('create_dev_lock', [True, False])
@@ -840,8 +836,7 @@ def test_install_lock_package_with_conda(tmp_directory, monkeypatch,
         expected.pop(-1)
 
     assert mock_cmdr_wrapped.call_args_list == expected
-    assert all(
-        [Path(c[0][0]).is_file() for c in mock_cmdr_wrapped.call_args_list])
+    assert all(Path(c[0][0]).is_file() for c in mock_cmdr_wrapped.call_args_list)
 
 
 # FIXME: I tested this locally on a windows machine but breaks on Github

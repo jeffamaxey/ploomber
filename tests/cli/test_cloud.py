@@ -54,10 +54,7 @@ def delete_sample_pipeline(pipeline_id=None):
 
 def get_tabular_pipeline(pipeline_id=None, verbose=None):
     runner = CliRunner()
-    if pipeline_id:
-        args = [pipeline_id]
-    else:
-        args = []
+    args = [pipeline_id] if pipeline_id else []
     if verbose:
         args.append(verbose)
     res = runner.invoke(get_pipelines, args=args, catch_exceptions=False)

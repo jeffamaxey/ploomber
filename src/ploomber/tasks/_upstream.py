@@ -47,13 +47,13 @@ class Upstream(abc.Mapping):
     @property
     def first(self):
         if not self._dict:
-            raise KeyError('Cannot obtain first upstream task, task "{}" has '
-                           'no upstream dependencies declared'.format(
-                               self._name))
+            raise KeyError(
+                f'Cannot obtain first upstream task, task "{self._name}" has no upstream dependencies declared'
+            )
         if len(self._dict) > 1:
-            raise ValueError('first can only be used if there is a single '
-                             'upstream dependency, task "{}" has: {}'.format(
-                                 self._name, len(self._dict)))
+            raise ValueError(
+                f'first can only be used if there is a single upstream dependency, task "{self._name}" has: {len(self._dict)}'
+            )
 
         first_key = next(iter(self._dict))
         return self._dict[first_key]
@@ -80,23 +80,21 @@ class Upstream(abc.Mapping):
 
         if not len(self._dict):
             raise UpstreamKeyError(
-                'Cannot obtain upstream dependency "{}". '
-                'Task "{}" has no upstream dependencies'.format(
-                    key, self._name))
+                f'Cannot obtain upstream dependency "{key}". Task "{self._name}" has no upstream dependencies'
+            )
 
         try:
             return self._dict[key]
         except KeyError:
             raise UpstreamKeyError(
-                'Cannot obtain upstream dependency "{}" for task "{}" '
-                'declared dependencies are: {}'.format(key, self._name, self))
+                f'Cannot obtain upstream dependency "{key}" for task "{self._name}" declared dependencies are: {self}'
+            )
 
     def __setitem__(self, key, value):
         self._dict[key] = value
 
     def __iter__(self):
-        for name in self._dict.keys():
-            yield name
+        yield from self._dict.keys()
 
     def __len__(self):
         return len(self._dict)
@@ -110,16 +108,14 @@ class Upstream(abc.Mapping):
         return str(self._dict)
 
     def __repr__(self):
-        return 'Upstream({})'.format(repr(self._dict))
+        return f'Upstream({repr(self._dict)})'
 
     def __exit__(self, *exc):
         self._in_context = False
-        unused = set(
-            [key for key, count in self._counts.items() if count == 0])
-
-        if unused:
-            warnings.warn('The following upstream dependencies in task "{}" '
-                          'were not used {}'.format(self._name, unused))
+        if unused := {key for key, count in self._counts.items() if count == 0}:
+            warnings.warn(
+                f'The following upstream dependencies in task "{self._name}" were not used {unused}'
+            )
 
 
 def _to_json_serializable(value):

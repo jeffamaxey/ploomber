@@ -15,8 +15,7 @@ class JinjaExtractor:
     """
     def __init__(self, code):
         if not isinstance(code, (str, Placeholder)):
-            raise TypeError('Code must be a str or Placeholder object, got: '
-                            '{}'.format(type(code)))
+            raise TypeError(f'Code must be a str or Placeholder object, got: {type(code)}')
         self.code = code
         self.ast = self._get_ast(code)
 
@@ -30,20 +29,18 @@ class JinjaExtractor:
             return env.parse(code._raw)
 
     def get_code_as_str(self):
-        if isinstance(self.code, str):
-            return self.code
-        else:
-            return self.code._raw
+        return self.code if isinstance(self.code, str) else self.code._raw
 
     def find_variable_access(self, variable):
         """Find occurrences of {{variable.something}} and {{variable['something']}}
         """
         attr = self.ast.find_all(Getattr)
         item = self.ast.find_all(Getitem)
-        return set([
+        return {
             obj.arg.as_const() if isinstance(obj, Getitem) else obj.attr
-            for obj in chain(attr, item) if obj.node.name == variable
-        ]) or None
+            for obj in chain(attr, item)
+            if obj.node.name == variable
+        } or None
 
     def find_variable_assignment(self, variable):
         """

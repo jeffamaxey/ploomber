@@ -166,27 +166,21 @@ class _RemoteFile:
 
         if (self.metadata.timestamp is None or upstream_timestamp is None):
             return True
-        else:
-            more_recent_upstream = upstream_timestamp > self.metadata.timestamp
+        more_recent_upstream = upstream_timestamp > self.metadata.timestamp
 
-            if with_respect_to_local:
-                outdated_upstream_prod = upstream.product._is_outdated()
-            else:
-                outdated_upstream_prod = upstream.product._is_remote_outdated(
-                    True)
-
-            return more_recent_upstream or outdated_upstream_prod
+        outdated_upstream_prod = (
+            upstream.product._is_outdated()
+            if with_respect_to_local
+            else upstream.product._is_remote_outdated(True)
+        )
+        return more_recent_upstream or outdated_upstream_prod
 
     def __repr__(self):
         return f'{type(self).__name__}({self._local_file!r})'
 
 
 def _fetch_metadata_from_file_product(product, check_file_exists):
-    if check_file_exists:
-        file_exists = product._path_to_file.exists()
-    else:
-        file_exists = True
-
+    file_exists = product._path_to_file.exists() if check_file_exists else True
     # but we have no control over the stored code, it might be missing
     # so we check, we also require the file to exists: even if the
     # .metadata file exists, missing the actual data file means something

@@ -352,9 +352,8 @@ def get():
     spec = {
         'source': 'sample.sql',
         'product': ['name', 'table'],
+        key: 'client_dotted_path_returns_none.get',
     }
-
-    spec[key] = 'client_dotted_path_returns_none.get'
 
     with pytest.raises(TypeError) as excinfo:
         TaskSpec(spec, meta=meta, project_root='.').to_task(dag=dag)
@@ -387,10 +386,8 @@ some_non_function = 1
     spec = {
         'source': 'my_tasks_flat.raw.function',
         'product': 'some_file.txt',
+        key: 'test_error_if_dotted_path_does_not_return_a_callable.some_non_function',
     }
-
-    spec[key] = ('test_error_if_dotted_path_does_not_return_a_callable'
-                 '.some_non_function')
 
     with pytest.raises(TypeError) as excinfo:
         TaskSpec(spec, meta=meta, project_root='.').to_task(dag=DAG())

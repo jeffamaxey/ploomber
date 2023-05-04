@@ -49,7 +49,7 @@ class Commander:
                  templates_path=None,
                  environment_kwargs=None):
         self.tw = TerminalWriter()
-        self.workspace = None if not workspace else Path(workspace).resolve()
+        self.workspace = Path(workspace).resolve() if workspace else None
         self._to_delete = []
         self._warnings = []
 
@@ -134,30 +134,25 @@ class Commander:
             if expected_output is not None:
                 error = result != expected_output
 
-        if error:
-            lines = []
-
-            if error_message:
-                line_first = error_message
-            else:
-                if show_cmd:
-                    cmd_str = ' '.join(cmd)
-                    line_first = ('An error occurred when executing '
-                                  f'command: {cmd_str}')
-                else:
-                    line_first = 'An error occurred.'
-
-            lines.append(line_first)
-
-            if not capture_output:
-                lines.append(f'Original error message: {error}')
-
-            if hint:
-                lines.append(f'Hint: {hint}.')
-
-            raise CommanderException('\n'.join(lines))
-        else:
+        if not error:
             return result
+        if error_message:
+            line_first = error_message
+        elif show_cmd:
+            cmd_str = ' '.join(cmd)
+            line_first = ('An error occurred when executing '
+                          f'command: {cmd_str}')
+        else:
+            line_first = 'An error occurred.'
+
+        lines = [line_first]
+        if not capture_output:
+            lines.append(f'Original error message: {error}')
+
+        if hint:
+            lines.append(f'Hint: {hint}.')
+
+        raise CommanderException('\n'.join(lines))
 
     def __enter__(self):
         if self.workspace and not Path(self.workspace).exists():

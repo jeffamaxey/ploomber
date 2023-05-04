@@ -221,30 +221,21 @@ def _comment_if_ipython_magic(source):
 
         if comment_rest:
             lines_out.append(_comment(line))
+        elif line_magic := _is_ipython_line_magic(line):
+            lines_out.append(_comment(line))
+
+        elif _is_inline_shell(line):
+            lines_out.append(_comment(line))
+
+        elif cell_magic in HAS_INLINE_PYTHON:
+            lines_out.append(_comment(line))
+
+        elif cell_magic:
+            lines_out.append(_comment(line))
+            comment_rest = True
+
         else:
-            line_magic = _is_ipython_line_magic(line)
-
-            # if line magic, comment line
-            if line_magic:
-                lines_out.append(_comment(line))
-
-            # if inline shell, comment line
-            elif _is_inline_shell(line):
-                lines_out.append(_comment(line))
-
-            # if cell magic, comment line
-            elif cell_magic in HAS_INLINE_PYTHON:
-                lines_out.append(_comment(line))
-
-            # if cell magic whose content *is not* Python, comment line and
-            # all the remaining lines in the cell
-            elif cell_magic:
-                lines_out.append(_comment(line))
-                comment_rest = True
-
-            # otherwise, don't do anything
-            else:
-                lines_out.append(line)
+            lines_out.append(line)
 
     return '\n'.join(lines_out)
 
@@ -272,10 +263,7 @@ def _is_ipython_cell_magic(source):
     """
     m = re.match(_IS_IPYTHON_CELL_MAGIC, source.lstrip())
 
-    if not m:
-        return False
-
-    return m.group()
+    return m.group() if m else False
 
 
 def check_params(passed, params_source, filename, warn=False):
@@ -350,6 +338,9 @@ def _get_defined_variables(params_source):
     variable assignments (e.g., function definitions, exceptions)
     """
     used_names = parso.parse(params_source).get_used_names()
-    return set(key for key, value in used_names.items()
-               if value[-1].is_definition()
-               and value[-1].get_definition().type == 'expr_stmt')
+    return {
+        key
+        for key, value in used_names.items()
+        if value[-1].is_definition()
+        and value[-1].get_definition().type == 'expr_stmt'
+    }

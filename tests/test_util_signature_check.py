@@ -125,7 +125,7 @@ def test_signature_check_upstream_missing():
         pass
 
     with pytest.raises(TaskRenderError) as excinfo:
-        signature_check(fn, dict(), 'task')
+        signature_check(fn, {}, 'task')
 
     error = ('Error rendering task "task" initialized with function '
              '"fn". Missing arguments: [\'upstream\']. '
@@ -139,7 +139,7 @@ def test_signature_check_params_and_upstream_missing():
         pass
 
     with pytest.raises(TaskRenderError) as excinfo:
-        signature_check(fn, dict(), 'task')
+        signature_check(fn, {}, 'task')
 
     error = ('Error rendering task "task" initialized with function "fn". '
              'Missing arguments: [\'a\', \'upstream\']. Verify this '

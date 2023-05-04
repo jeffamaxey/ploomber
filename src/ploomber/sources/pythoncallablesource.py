@@ -24,34 +24,32 @@ class CallableLoader:
         self._from_dotted_path = isinstance(primitive, str)
         self._primitive = primitive
 
-        if self.hot_reload and not self._from_dotted_path:
-            self.module_name = inspect.getmodule(primitive).__name__
-            self.fn_name = primitive.__name__
+        if self.hot_reload:
+            if not self._from_dotted_path:
+                self.module_name = inspect.getmodule(primitive).__name__
+                self.fn_name = primitive.__name__
 
-            # if using hot reload, we cannot keep the reference to the
-            # original function, otherwise pickle will give errors
-            self._primitive = None
-        elif self.hot_reload and self._from_dotted_path:
-            raise NotImplementedError('hot_reload is not implemented when '
-                                      'initializing from a dotted path')
+                # if using hot reload, we cannot keep the reference to the
+                # original function, otherwise pickle will give errors
+                self._primitive = None
+            else:
+                raise NotImplementedError('hot_reload is not implemented when '
+                                          'initializing from a dotted path')
 
     def load(self):
         if self._from_dotted_path:
             return load_dotted_path(self._primitive)
-        else:
-            if self.hot_reload:
-                module = importlib.import_module(self.module_name)
-                importlib.reload(module)
-                return getattr(module, self.fn_name)
-            else:
-                return self._primitive
+        if not self.hot_reload:
+            return self._primitive
+        module = importlib.import_module(self.module_name)
+        importlib.reload(module)
+        return getattr(module, self.fn_name)
 
     def get_source(self):
-        if self._from_dotted_path:
-            _, source = lazily_locate_dotted_path(self._primitive)
-            return source
-        else:
+        if not self._from_dotted_path:
             return inspect.getsource(self.load())
+        _, source = lazily_locate_dotted_path(self._primitive)
+        return source
 
     def get_loc(self):
         if self._from_dotted_path:
@@ -60,7 +58,7 @@ class CallableLoader:
         else:
             path = getfile(self.load())
             _, line = inspect.getsourcelines(self.load())
-            return '{}:{}'.format(path, line)
+            return f'{path}:{line}'
 
     @property
     def from_dotted_path(self):
@@ -111,8 +109,7 @@ class PythonCallableSource(Source):
         return self._callable_loader.load()
 
     def __repr__(self):
-        return "{}({}) (defined at: '{}')".format(
-            type(self).__name__, self.name, self.loc)
+        return f"{type(self).__name__}({self.name}) (defined at: '{self.loc}')"
 
     def __str__(self):
         if self._source_as_str is None or self._hot_reload:

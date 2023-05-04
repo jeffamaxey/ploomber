@@ -83,7 +83,6 @@ class ScaffoldLoader:
 
                 did_create = True
 
-        #  script task...
         else:
             path = Path(source)
 
@@ -92,17 +91,15 @@ class ScaffoldLoader:
                     # create parent folders if needed
                     source.parent.mkdir(parents=True, exist_ok=True)
 
-                    content = self.render('task' + source.suffix,
-                                          params=params)
+                    content = self.render(f'task{source.suffix}', params=params)
 
-                    print('Adding {}...'.format(source))
+                    print(f'Adding {source}...')
                     source.write_text(content)
 
                     did_create = True
                 else:
-                    print('Error: This command does not support adding '
-                          'tasks with extension "{}", valid ones are '
-                          '.py and .sql. Skipping {}'.format(
-                              path.suffix, path))
+                    print(
+                        f'Error: This command does not support adding tasks with extension "{path.suffix}", valid ones are .py and .sql. Skipping {path}'
+                    )
 
         return did_create

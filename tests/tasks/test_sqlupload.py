@@ -101,8 +101,7 @@ def test_append_rows(tmp_directory, pg_client_and_schema):
 
     dag.build()
 
-    df = pd.read_sql('SELECT * FROM {}.test_append'.format(schema),
-                     pg_client.engine)
+    df = pd.read_sql(f'SELECT * FROM {schema}.test_append', pg_client.engine)
 
     assert df.shape[0] == 6
 

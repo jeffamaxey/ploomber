@@ -16,7 +16,7 @@ classes = [
 @pytest.mark.parametrize('class_', classes)
 def test_literal(class_):
     p = class_(('schema', 'name', 'table'))
-    assert repr(p) == class_.__name__ + "(('schema', 'name', 'table'))"
+    assert repr(p) == f"{class_.__name__}(('schema', 'name', 'table'))"
     assert str(p) == 'schema.name'
 
 
@@ -26,7 +26,7 @@ def test_with_placeholder(class_):
     assert repr(p) == (class_.__name__ +
                        "(('schema', '{{placeholder}}', 'table'))")
     p.render({'placeholder': 'name'})
-    assert repr(p) == class_.__name__ + "(('schema', 'name', 'table'))"
+    assert repr(p) == f"{class_.__name__}(('schema', 'name', 'table'))"
     assert str(p) == 'schema.name'
 
 
@@ -34,14 +34,14 @@ def test_with_placeholder(class_):
 @pytest.mark.parametrize('schema', [None, ''])
 def test_empty_schema_is_not_rendered(class_, schema):
     p = class_((schema, 'name', 'table'))
-    assert repr(p) == class_.__name__ + "(('name', 'table'))"
+    assert repr(p) == f"{class_.__name__}(('name', 'table'))"
     assert str(p) == 'name'
 
 
 @pytest.mark.parametrize('class_', classes)
 def test_two_elements(class_):
     p = class_(('name', 'table'))
-    assert repr(p) == class_.__name__ + "(('name', 'table'))"
+    assert repr(p) == f"{class_.__name__}(('name', 'table'))"
     assert str(p) == 'name'
 
 

@@ -37,11 +37,7 @@ class Params(abc.MutableMapping):
         """
         obj = cls(params=None)
 
-        if copy:
-            obj._dict = copy_module.copy(params)
-        else:
-            obj._dict = params
-
+        obj._dict = copy_module.copy(params) if copy else params
         return obj
 
     def _setitem(self, key, value):
@@ -77,9 +73,9 @@ class Params(abc.MutableMapping):
         try:
             return self._dict[key]
         except KeyError:
-            raise KeyError('Cannot obtain Task param named '
-                           '"{}", declared params are: {}'.format(
-                               key, list(self._dict.keys())))
+            raise KeyError(
+                f'Cannot obtain Task param named "{key}", declared params are: {list(self._dict.keys())}'
+            )
 
     def __setitem__(self, key, value):
         raise RuntimeError('Task params are read-only, if you need a copy'
@@ -87,8 +83,7 @@ class Params(abc.MutableMapping):
                            ' of the underlying dictionary')
 
     def __iter__(self):
-        for name in self._dict.keys():
-            yield name
+        yield from self._dict.keys()
 
     def __len__(self):
         return len(self._dict)
@@ -97,7 +92,7 @@ class Params(abc.MutableMapping):
         return str(self._dict)
 
     def __repr__(self):
-        return 'Params({})'.format(repr(self._dict))
+        return f'Params({repr(self._dict)})'
 
     def get(self, key):
         return self._dict.get(key)

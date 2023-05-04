@@ -18,7 +18,7 @@ class JupyterTaskResource:
         return {
             'name': self.task.name,
             'type': 'notebook',
-            'content': None if not content else self.interactive.to_nb(),
+            'content': self.interactive.to_nb() if content else None,
             'path': self.path,
             'writable': True,
             'created': datetime.datetime.now(),
@@ -34,7 +34,7 @@ class JupyterTaskResource:
 
 class JupyterDirectoryResource:
     def __init__(self, name, path):
-        self.task_resources = dict()
+        self.task_resources = {}
         self.name = name
         self.path = path
 
@@ -45,8 +45,7 @@ class JupyterDirectoryResource:
         return self.task_resources.get(key)
 
     def __iter__(self):
-        for t in self.task_resources:
-            yield t
+        yield from self.task_resources
 
     def __len__(self):
         return len(self.task_resources)
@@ -103,12 +102,12 @@ class JupyterDAGManager:
     Exposes PythonCallable tasks in a dag as Jupyter notebooks
     """
     def __init__(self, dag):
-        self.resources = dict()
+        self.resources = {}
 
         for t in dag.values():
             if isinstance(t, PythonCallable):
                 loc = remove_line_number(t.source.loc)
-                name = loc.name + ' (functions)'
+                name = f'{loc.name} (functions)'
                 key = str(PurePosixPath(as_jupyter_path(loc)).with_name(name))
 
                 if key not in self.resources:
@@ -124,7 +123,7 @@ class JupyterDAGManager:
         pairs = ((str(PurePosixPath(path).parent), res)
                  for path, res in self.resources.items())
 
-        self.resources_by_root = dict()
+        self.resources_by_root = {}
 
         for parent, resource in pairs:
             if parent not in self.resources_by_root:
@@ -139,8 +138,7 @@ class JupyterDAGManager:
         return self.resources[key]
 
     def __iter__(self):
-        for resource in self.resources:
-            yield resource
+        yield from self.resources
 
     def _get(self, path):
         path = path.strip('/')
@@ -150,8 +148,7 @@ class JupyterDAGManager:
     def get(self, path, content):
         """Get model located at path
         """
-        resource = self._get(path)
-        if resource:
+        if resource := self._get(path):
             return resource.to_model(content)
 
     def get_by_parent(self, parent):

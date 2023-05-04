@@ -67,6 +67,4 @@ class Client(abc.ABC):
         self._set_logger()
 
     def _set_logger(self):
-        self._logger = logging.getLogger('{}.{}'.format(
-            __name__,
-            type(self).__name__))
+        self._logger = logging.getLogger(f'{__name__}.{type(self).__name__}')

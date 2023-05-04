@@ -73,9 +73,11 @@ def test_upload_folder(s3, tmp_directory):
 
     contents = s3.list_objects(Bucket='some-bucket')['Contents']
 
-    assert set(c['Key'] for c in contents) == {
-        'my-folder/dir/a', 'my-folder/dir/b', 'my-folder/dir/subdir/c',
-        'my-folder/dir/subdir/nested/d'
+    assert {c['Key'] for c in contents} == {
+        'my-folder/dir/a',
+        'my-folder/dir/b',
+        'my-folder/dir/subdir/c',
+        'my-folder/dir/subdir/nested/d',
     }
 
 

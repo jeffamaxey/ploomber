@@ -51,14 +51,14 @@ def new_nb(fmt=None,
     if kname or klang or kdisplay:
         nb.metadata = {'kernelspec': {}}
 
-        if kname:
-            nb.metadata.kernelspec['name'] = kname
+    if kname:
+        nb.metadata.kernelspec['name'] = kname
 
-        if klang:
-            nb.metadata.kernelspec['language'] = klang
+    if klang:
+        nb.metadata.kernelspec['language'] = klang
 
-        if kdisplay:
-            nb.metadata.kernelspec['display_name'] = kdisplay
+    if kdisplay:
+        nb.metadata.kernelspec['display_name'] = kdisplay
 
     if isinstance(code, str):
         code = [code]
@@ -136,7 +136,7 @@ a + b
         (new_nb(fmt='ipynb'), 'ipynb', 'python'),
     ])
 def test_read_file(nb_str, ext, expected, tmp_directory):
-    path = Path('nb.' + ext)
+    path = Path(f'nb.{ext}')
     path.write_text(nb_str)
     source = NotebookSource(path)
 
@@ -144,11 +144,7 @@ def test_read_file(nb_str, ext, expected, tmp_directory):
     assert source.language == expected
 
     # jupyter sets as "R" (and not "r") as the language for R notebooks
-    if expected == 'r':
-        expected_lang = expected.upper()
-    else:
-        expected_lang = expected
-
+    expected_lang = expected.upper() if expected == 'r' else expected
     # most common kernels
     lang2kernel = {'python': 'python3', 'r': 'ir'}
     expected_kernel = lang2kernel[expected]
@@ -559,7 +555,7 @@ def test_repr_from_path(tmp_directory):
     path = Path(tmp_directory, 'nb.py')
     Path('nb.py').write_text(notebook_ab)
     source = NotebookSource(path)
-    assert repr(source) == "NotebookSource('{}')".format(path)
+    assert repr(source) == f"NotebookSource('{path}')"
 
 
 @pytest.mark.parametrize('code, docstring', [
@@ -853,11 +849,8 @@ def test_add_parameters_cell(tmp_directory, code, name, extract_product,
     assert fmt == expected_fmt
 
 
-@pytest.mark.parametrize('error, kwargs', [
-    ['Failed to read notebook', dict()],
-    ["Failed to read notebook from 'nb.ipynb'",
-     dict(path='nb.ipynb')],
-])
+@pytest.mark.parametrize('error, kwargs', [['Failed to read notebook', {}], ["Failed to read notebook from 'nb.ipynb'",
+     dict(path='nb.ipynb')]])
 def test_to_nb_obj_error_if_corrupted_json(error, kwargs):
 
     with pytest.raises(SourceInitializationError) as excinfo:

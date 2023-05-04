@@ -10,8 +10,7 @@ from itertools import product
 
 def expand_grid(grid):
     tuples = product(*[to_tuple(k, values) for k, values in grid.items()])
-    params = [{t[0]: t[1] for t in tuple_} for tuple_ in tuples]
-    return params
+    return [{t[0]: t[1] for t in tuple_} for tuple_ in tuples]
 
 
 def to_tuple(k, values):

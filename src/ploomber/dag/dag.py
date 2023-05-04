@@ -182,9 +182,8 @@ class DAG(AbstractDAG):
             self._executor = executor
         else:
             raise TypeError(
-                'executor must be "serial", "parallel" or '
-                'an instance of executors.Executor, got type {}'.format(
-                    type(executor)))
+                f'executor must be "serial", "parallel" or an instance of executors.Executor, got type {type(executor)}'
+            )
 
         self.on_finish = None
         self.on_failure = None
@@ -231,7 +230,6 @@ class DAG(AbstractDAG):
             self.check_tasks_have_allowed_status({TaskStatus.WaitingRender},
                                                  value)
 
-        # render errored
         elif value == DAGStatus.ErroredRender:
             allowed = {
                 TaskStatus.WaitingExecution,
@@ -242,9 +240,8 @@ class DAG(AbstractDAG):
             }
             self.check_tasks_have_allowed_status(allowed, value)
 
-        # rendering ok, waiting execution
         elif value == DAGStatus.WaitingExecution:
-            exec_values = set(task.exec_status for task in self.values())
+            exec_values = {task.exec_status for task in self.values()}
             allowed = {
                 TaskStatus.WaitingExecution,
                 TaskStatus.WaitingDownload,
@@ -253,38 +250,25 @@ class DAG(AbstractDAG):
             }
             self.check_tasks_have_allowed_status(allowed, value)
 
-        # attempted execution but failed
         elif value == DAGStatus.Executed:
-            exec_values = set(task.exec_status for task in self.values())
+            exec_values = {task.exec_status for task in self.values()}
             # check len(self) to prevent this from failing on an empty DAG
             if not exec_values <= {TaskStatus.Executed, TaskStatus.Skipped
                                    } and len(self):
-                warnings.warn('The DAG "{}" entered in an inconsistent '
-                              'state: trying to set DAG status to '
-                              'DAGStatus.Executed but executor '
-                              'returned tasks whose status is not '
-                              'TaskStatus.Executed nor '
-                              'TaskStatus.Skipped, returned '
-                              'status: {}'.format(self.name, exec_values))
-        elif value == DAGStatus.Errored:
-            # no value validation since this state is also set then the
-            # DAG executor ends up abrubtly
-            pass
-        else:
-            raise RuntimeError('Unknown DAGStatus value: {}'.format(value))
+                warnings.warn(
+                    f'The DAG "{self.name}" entered in an inconsistent state: trying to set DAG status to DAGStatus.Executed but executor returned tasks whose status is not TaskStatus.Executed nor TaskStatus.Skipped, returned status: {exec_values}'
+                )
+        elif value != DAGStatus.Errored:
+            raise RuntimeError(f'Unknown DAGStatus value: {value}')
 
         self.__exec_status = value
 
     def check_tasks_have_allowed_status(self, allowed, new_status):
-        exec_values = set(task.exec_status for task in self.values())
+        exec_values = {task.exec_status for task in self.values()}
         if not exec_values <= allowed:
-            warnings.warn('The DAG "{}" entered in an inconsistent state: '
-                          'trying to set DAG status to '
-                          '{} but executor '
-                          'returned tasks whose status is not in a '
-                          'subet of {}. Returned '
-                          'status: {}'.format(self.name, new_status, allowed,
-                                              exec_values))
+            warnings.warn(
+                f'The DAG "{self.name}" entered in an inconsistent state: trying to set DAG status to {new_status} but executor returned tasks whose status is not in a subet of {allowed}. Returned status: {exec_values}'
+            )
 
     @property
     def product(self):
@@ -359,70 +343,72 @@ class DAG(AbstractDAG):
         """
         Render tasks, and update exec_status
         """
-        if not self._params.cache_rendered_status:
-            # if forcing rendering, there is no need to download metadata
-            if not force:
-                fetch_remote_metadata_in_parallel(self)
+        if self._params.cache_rendered_status:
+            return
+        # if forcing rendering, there is no need to download metadata
+        if not force:
+            fetch_remote_metadata_in_parallel(self)
+
+        if show_progress:
+            tasks = tqdm(self.values(), total=len(self))
+        else:
+            tasks = self.values()
+
+        exceptions = RenderExceptionsCollector()
+        warnings_ = RenderWarningsCollector()
+
+        # reset all tasks status
+        for task in tasks:
+            task.exec_status = TaskStatus.WaitingRender
+
+        for t in tasks:
+            # no need to process task with AbortedRender
+            if t.exec_status == TaskStatus.AbortedRender:
+                continue
 
             if show_progress:
-                tasks = tqdm(self.values(), total=len(self))
-            else:
-                tasks = self.values()
+                tasks.set_description(
+                    f'Rendering DAG "{self.name}"'
+                    if self.name != 'No name'
+                    else 'Rendering DAG'
+                )
 
-            exceptions = RenderExceptionsCollector()
-            warnings_ = RenderWarningsCollector()
+            with warnings.catch_warnings(record=True) as warnings_current:
+                warnings.simplefilter("ignore", DeprecationWarning)
 
-            # reset all tasks status
-            for task in tasks:
-                task.exec_status = TaskStatus.WaitingRender
+                try:
+                    t.render(
+                        force=force,
+                        outdated_by_code=self._params.outdated_by_code,
+                        remote=remote)
+                except Exception as e:
+                    tr = _format.exception(e)
+                    exceptions.append(task=t, message=tr)
 
-            for t in tasks:
-                # no need to process task with AbortedRender
-                if t.exec_status == TaskStatus.AbortedRender:
-                    continue
+            if warnings_current:
+                warnings_str = [str(w.message) for w in warnings_current]
+                warnings_.append(task=t, message='\n'.join(warnings_str))
 
-                if show_progress:
-                    tasks.set_description(
-                        'Rendering DAG "{}"'.format(self.name)
-                        if self.name != 'No name' else 'Rendering DAG')
+        if warnings_:
+            # FIXME: maybe raise one by one to keep the warning type
+            warnings.warn(str(warnings_))
 
-                with warnings.catch_warnings(record=True) as warnings_current:
-                    warnings.simplefilter("ignore", DeprecationWarning)
+        if exceptions:
+            self._exec_status = DAGStatus.ErroredRender
+            raise DAGRenderError(str(exceptions))
 
-                    try:
-                        t.render(
-                            force=force,
-                            outdated_by_code=self._params.outdated_by_code,
-                            remote=remote)
-                    except Exception as e:
-                        tr = _format.exception(e)
-                        exceptions.append(task=t, message=tr)
-
-                if warnings_current:
-                    warnings_str = [str(w.message) for w in warnings_current]
-                    warnings_.append(task=t, message='\n'.join(warnings_str))
-
-            if warnings_:
-                # FIXME: maybe raise one by one to keep the warning type
-                warnings.warn(str(warnings_))
-
-            if exceptions:
-                self._exec_status = DAGStatus.ErroredRender
-                raise DAGRenderError(str(exceptions))
-
-            try:
-                self._run_on_render()
-            except Exception as e:
+        try:
+            self._run_on_render()
+        except Exception as e:
                 # error in hook, log exception
-                msg = ('Exception when running on_render '
-                       'for DAG "{}": {}'.format(self.name, e))
-                self._logger.exception(msg)
-                self._exec_status = DAGStatus.ErroredRender
-                raise DAGRenderError(msg) from e
+            msg = f'Exception when running on_render for DAG "{self.name}": {e}'
+            self._logger.exception(msg)
+            self._exec_status = DAGStatus.ErroredRender
+            raise DAGRenderError(msg) from e
 
-            check_duplicated_products(self)
+        check_duplicated_products(self)
 
-            self._exec_status = DAGStatus.WaitingExecution
+        self._exec_status = DAGStatus.WaitingExecution
 
     def build(self,
               force=False,
@@ -493,10 +479,7 @@ class DAG(AbstractDAG):
 
         with dag_logger:
             try:
-                if debug:
-                    report = debug_if_exception(callable_)
-                else:
-                    report = callable_()
+                report = debug_if_exception(callable_) if debug else callable_()
             finally:
                 if close_clients:
                     self.close_clients()
@@ -518,84 +501,81 @@ class DAG(AbstractDAG):
                                 'fix rendering errors then build again. '
                                 'To see the full traceback again, run '
                                 'dag.render(force=True)')
+        self._logger.info('Building DAG %s', self)
+
+        tb = {}
+
+        try:
+            # within_dag flags when we execute a task in isolation
+            # vs as part of a dag execution
+            # FIXME: not passing force flag
+            task_reports = self._executor(dag=self,
+                                          show_progress=show_progress)
+
+        # executors raise this error to signal that there was an error
+        # building the dag, this allows us to run the on_failure hook,
+        # but any other errors should not be caught (e.g.
+        # a user might turn that setting off in the executor to start
+        # a debugging session at the line of failure)
+        except DAGBuildError as e:
+            tb['build'] = traceback.format_exc()
+            self._exec_status = DAGStatus.Errored
+            build_exception = e
+        except DAGBuildEarlyStop:
+            # early stop and empty on_failure, nothing left to do
+            if self.on_failure is None:
+                return
         else:
-            self._logger.info('Building DAG %s', self)
+            # no error when building dag
+            build_exception = None
 
-            tb = {}
+        if build_exception is None:
+            empty = [
+                TaskReport.empty_with_name(t.name) for t in self.values()
+                if t.exec_status == TaskStatus.Skipped
+            ]
 
-            try:
-                # within_dag flags when we execute a task in isolation
-                # vs as part of a dag execution
-                # FIXME: not passing force flag
-                task_reports = self._executor(dag=self,
-                                              show_progress=show_progress)
-
-            # executors raise this error to signal that there was an error
-            # building the dag, this allows us to run the on_failure hook,
-            # but any other errors should not be caught (e.g.
-            # a user might turn that setting off in the executor to start
-            # a debugging session at the line of failure)
-            except DAGBuildError as e:
-                tb['build'] = traceback.format_exc()
-                self._exec_status = DAGStatus.Errored
-                build_exception = e
-            except DAGBuildEarlyStop:
-                # early stop and empty on_failure, nothing left to do
-                if self.on_failure is None:
-                    return
-            else:
-                # no error when building dag
-                build_exception = None
-
-            if build_exception is None:
-                empty = [
-                    TaskReport.empty_with_name(t.name) for t in self.values()
-                    if t.exec_status == TaskStatus.Skipped
-                ]
-
-                build_report = BuildReport(task_reports + empty)
-                self._logger.info(' DAG report:\n{}'.format(build_report))
+            build_report = BuildReport(task_reports + empty)
+            self._logger.info(f' DAG report:\n{build_report}')
 
                 # try on_finish hook
-                try:
-                    self._run_on_finish(build_report)
-                except Exception as e:
-                    tb['on_finish'] = traceback.format_exc()
+            try:
+                self._run_on_finish(build_report)
+            except Exception as e:
+                tb['on_finish'] = traceback.format_exc()
                     # on_finish error, log exception and set status
-                    msg = ('Exception when running on_finish '
-                           'for DAG "{}": {}'.format(self.name, e))
-                    self._logger.exception(msg)
-                    self._exec_status = DAGStatus.Errored
+                msg = f'Exception when running on_finish for DAG "{self.name}": {e}'
+                self._logger.exception(msg)
+                self._exec_status = DAGStatus.Errored
 
-                    if isinstance(e, DAGBuildEarlyStop):
-                        # early stop, nothing left to co
-                        return
-                    else:
-                        # otherwise raise exception
-                        raise DAGBuildError(msg) from e
+                if isinstance(e, DAGBuildEarlyStop):
+                    # early stop, nothing left to co
+                    return
                 else:
-                    # DAG success and on_finish did not raise exception
-                    self._exec_status = DAGStatus.Executed
-                    return build_report
-
+                    # otherwise raise exception
+                    raise DAGBuildError(msg) from e
             else:
+                # DAG success and on_finish did not raise exception
+                self._exec_status = DAGStatus.Executed
+                return build_report
+
+        else:
                 # DAG raised error, run on_failure hook
-                try:
-                    self._run_on_failure(tb)
-                except Exception as e:
+            try:
+                self._run_on_failure(tb)
+            except Exception as e:
                     # error in hook, log exception
-                    msg = ('Exception when running on_failure '
-                           'for DAG "{}": {}'.format(self.name, e))
-                    self._logger.exception(msg)
+                msg = f'Exception when running on_failure for DAG "{self.name}": {e}'
+                self._logger.exception(msg)
 
-                    # do not raise exception if early stop
-                    if isinstance(e, DAGBuildEarlyStop):
-                        return
-                    else:
-                        raise DAGBuildError(msg) from e
+                # do not raise exception if early stop
+                if isinstance(e, DAGBuildEarlyStop):
+                    return
+                else:
+                    raise DAGBuildError(msg) from e
 
-                # on_failure hook executed, raise original exception
-                raise build_exception
+            # on_failure hook executed, raise original exception
+            raise build_exception
 
     def close_clients(self):
         """Close all clients (dag-level, task-level and product-level)
@@ -698,12 +678,11 @@ class DAG(AbstractDAG):
         if isinstance(target, str) and '*' in target:
             targets = set(fnmatch.filter(self._iter(), target))
 
-            to_include = [
-                self[target]._lineage for target in targets
+            if to_include := [
+                self[target]._lineage
+                for target in targets
                 if self[target]._lineage
-            ]
-
-            if to_include:
+            ]:
                 lineage = reduce(lambda a, b: a.union(b), to_include)
             else:
                 lineage = set()
@@ -755,13 +734,9 @@ class DAG(AbstractDAG):
         sections = sections or ['plot', 'status']
 
         if fmt not in {'html', 'md'}:
-            raise ValueError('fmt must be html or md, got {}'.format(fmt))
+            raise ValueError(f'fmt must be html or md, got {fmt}')
 
-        if 'status' in sections:
-            status = self.status().to_format('html')
-        else:
-            status = False
-
+        status = self.status().to_format('html') if 'status' in sections else False
         if 'plot' in sections:
             fd, path_to_plot = tempfile.mkstemp(suffix='.png')
             os.close(fd)
@@ -843,11 +818,7 @@ class DAG(AbstractDAG):
             with _path_for_plot(path_to_plot=output, fmt='html') as path:
                 plot.with_d3(dag_json, output=path)
 
-                if output == 'embed':
-                    return plot.embedded_html(path=path)
-                else:
-                    return path
-
+                return plot.embedded_html(path=path) if output == 'embed' else path
         elif not plot.check_pygraphviz_installed() and backend == "pygraphviz":
             raise ImportError(
                 _make_requires_error_message(
@@ -863,10 +834,7 @@ class DAG(AbstractDAG):
                                include_products=include_products)
             G.draw(path, prog='dot', args='-Grankdir=LR')
 
-            if output == 'embed':
-                return Image(filename=path)
-            else:
-                return path
+            return Image(filename=path) if output == 'embed' else path
 
     def _add_task(self, task):
         """Adds a task to the DAG
@@ -958,11 +926,7 @@ class DAG(AbstractDAG):
                 G.add_edges_from([(get_task_id(up), get_task_id(task))
                                   for up in task.upstream.values()])
 
-        if fmt in {'networkx', 'd3'}:
-            return G
-        else:
-            # to_agraph converts to pygraphviz
-            return nx.nx_agraph.to_agraph(G)
+        return G if fmt in {'networkx', 'd3'} else nx.nx_agraph.to_agraph(G)
 
     def _add_edge(self, task_from, task_to, group_name=None):
         """Add an edge between two tasks
@@ -1036,8 +1000,7 @@ class DAG(AbstractDAG):
         try:
             return self._G.nodes[key]['task']
         except KeyError as e:
-            e.args = ('DAG does not have a task with name {}'.format(
-                repr(key)), )
+            e.args = (f'DAG does not have a task with name {repr(key)}', )
             raise
 
     def __delitem__(self, key):
@@ -1063,22 +1026,20 @@ class DAG(AbstractDAG):
         # TODO: raise a warning if this any of this dag tasks have tasks
         # from other tasks as dependencies (they won't show up here)
         try:
-            for name in nx.algorithms.topological_sort(self._G):
-                yield name
+            yield from nx.algorithms.topological_sort(self._G)
         except nx.NetworkXUnfeasible:
             raise DAGCycle
 
     def _iter(self):
         """Iterate over tasks names (unordered but more efficient than __iter__
         """
-        for name in self._G:
-            yield name
+        yield from self._G
 
     def __len__(self):
         return len(self._G)
 
     def __repr__(self):
-        return '{}("{}")'.format(type(self).__name__, self.name)
+        return f'{type(self).__name__}("{self.name}")'
 
     # IPython integration
     # https://ipython.readthedocs.io/en/stable/config/integrating.html
@@ -1097,25 +1058,18 @@ class DAG(AbstractDAG):
 
     def __setstate__(self, state):
         self.__dict__.update(state)
-        self._logger = logging.getLogger('{}.{}'.format(
-            __name__,
-            type(self).__name__))
+        self._logger = logging.getLogger(f'{__name__}.{type(self).__name__}')
 
 
 def _single_product_short_repr(product):
     s = repr(product)
 
-    if len(s) > 20:
-        s_short = ''
+    if len(s) <= 20:
+        return s
 
-        t = ceil(len(s) / 20)
+    t = ceil(len(s) / 20)
 
-        for i in range(t):
-            s_short += s[(20 * i):(20 * (i + 1))] + '\n'
-    else:
-        s_short = s
-
-    return s_short
+    return ''.join(s[(20 * i):(20 * (i + 1))] + '\n' for i in range(t))
 
 
 def _meta_product_short_repr(metaproduct):
@@ -1133,7 +1087,7 @@ def _product_short_repr(product):
 def _task_short_repr(task):
     def short(s):
         max_l = 30
-        return s if len(s) <= max_l else s[:max_l - 3] + '...'
+        return s if len(s) <= max_l else f'{s[:max_l - 3]}...'
 
     return ('{} -> \n{}'.format(short(str(task.name)),
                                 _product_short_repr(task.product)))

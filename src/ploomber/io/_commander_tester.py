@@ -34,7 +34,7 @@ class CommanderTester:
     """
     def __init__(self, run=None, return_value=None):
         self._run = run or []
-        self._return_value = return_value or dict()
+        self._return_value = return_value or {}
         self._calls = []
 
     def __call__(self, cmd):

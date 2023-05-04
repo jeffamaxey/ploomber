@@ -12,7 +12,7 @@ _EXTRACTOR_FOR_LANGUAGE = {
 def extractor_class_for_language(language):
     if language not in _EXTRACTOR_FOR_LANGUAGE:
         raise NotImplementedError(
-            '"{}" is unsupported, supported languages are {}'.format(
-                language, list(_EXTRACTOR_FOR_LANGUAGE)))
+            f'"{language}" is unsupported, supported languages are {list(_EXTRACTOR_FOR_LANGUAGE)}'
+        )
 
     return _EXTRACTOR_FOR_LANGUAGE[language]

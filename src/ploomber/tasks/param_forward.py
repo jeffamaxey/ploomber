@@ -6,10 +6,7 @@ from ploomber.products import EmptyProduct
 
 
 def _input_data_passer(input_data, preprocessor):
-    if preprocessor is None:
-        return input_data
-    else:
-        return preprocessor(input_data)
+    return input_data if preprocessor is None else preprocessor(input_data)
 
 
 def input_data_passer(dag, name, preprocessor=None):

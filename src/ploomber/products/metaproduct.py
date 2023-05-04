@@ -34,11 +34,9 @@ class ProductsContainer:
 
     def __iter__(self):
         if isinstance(self.products, Mapping):
-            for product in self.products.values():
-                yield product
+            yield from self.products.values()
         else:
-            for product in self.products:
-                yield product
+            yield from self.products
 
     def __getitem__(self, key):
         return self.products[key]
@@ -52,13 +50,13 @@ class ProductsContainer:
                 for name, product in self.products.items()
             }
         else:
-            return list(str(product) for product in self.products)
+            return [str(product) for product in self.products]
 
     def __len__(self):
         return len(self.products)
 
     def __repr__(self):
-        return '{}({})'.format(type(self).__name__, str(self.products))
+        return f'{type(self).__name__}({str(self.products)})'
 
     def __str__(self):
         return str(self.products)
@@ -123,7 +121,7 @@ class MetaProduct(Mapping):
                     f"File({p!r})") from e
 
     def exists(self):
-        return all([p.exists() for p in self.products])
+        return all(p.exists() for p in self.products)
 
     def missing(self):
         # used to throw a meaninful error message when some products do not
@@ -157,10 +155,10 @@ class MetaProduct(Mapping):
         return any(is_outdated)
 
     def _outdated_data_dependencies(self):
-        return any([p._outdated_data_dependencies() for p in self.products])
+        return any(p._outdated_data_dependencies() for p in self.products)
 
     def _outdated_code_dependency(self):
-        return any([p._outdated_code_dependency() for p in self.products])
+        return any(p._outdated_code_dependency() for p in self.products)
 
     def to_json_serializable(self):
         """Returns a JSON serializable version of this product
@@ -181,8 +179,7 @@ class MetaProduct(Mapping):
         return str(self.products)
 
     def __iter__(self):
-        for product in self.products:
-            yield product
+        yield from self.products
 
     def __getitem__(self, key):
         return self.products[key]

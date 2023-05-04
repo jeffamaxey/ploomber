@@ -68,7 +68,7 @@ def distinct_values_in_column(client, col: str, product):
     output = cur.fetchall()
     cur.close()
 
-    return set(o[0] for o in output)
+    return {o[0] for o in output}
 
 
 def range_in_column(client, col: str, product):

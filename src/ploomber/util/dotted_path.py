@@ -58,9 +58,7 @@ class DottedPath:
             self._load_callable()
 
         spec_kwargs = self._spec.get_kwargs()
-        overlap = set(spec_kwargs) & set(kwargs)
-
-        if overlap:
+        if overlap := set(spec_kwargs) & set(kwargs):
             overlap_pretty = ", ".join(f"'{w}'" for w in overlap)
             warnings.warn('Got duplicated arguments '
                           f'({overlap_pretty}) when calling dotted path '
@@ -119,9 +117,7 @@ def load_dotted_path(dotted_path, raise_=True, reload=False):
     """
     obj, module = None, None
 
-    parsed = _validate_dotted_path(dotted_path, raise_=raise_)
-
-    if parsed:
+    if parsed := _validate_dotted_path(dotted_path, raise_=raise_):
         mod, name = parsed
         main_mod = str(mod.split('.')[0])
         try:
@@ -134,8 +130,7 @@ def load_dotted_path(dotted_path, raise_=True, reload=False):
                        f'path {dotted_path!r}: {e}')
 
                 if spec is not None:
-                    msg = (msg +
-                           f' (loaded {main_mod!r} from {spec.origin!r})')
+                    msg = f'{msg} (loaded {main_mod!r} from {spec.origin!r})'
 
                 e.msg = msg
 
@@ -157,9 +152,8 @@ def load_dotted_path(dotted_path, raise_=True, reload=False):
     else:
         if raise_:
             raise ValueError(
-                'Invalid dotted path value "{}", must be a dot separated '
-                'string, with at least '
-                '[module_name].[function_name]'.format(dotted_path))
+                f'Invalid dotted path value "{dotted_path}", must be a dot separated string, with at least [module_name].[function_name]'
+            )
 
 
 def load_callable_dotted_path(dotted_path, raise_=True, reload=False):
@@ -195,13 +189,13 @@ def call_dotted_path(dotted_path, raise_=True, reload=False, kwargs=None):
                                           raise_=raise_,
                                           reload=reload)
 
-    kwargs = kwargs or dict()
+    kwargs = kwargs or {}
 
     try:
         out = callable_(**kwargs)
     except Exception as e:
         origin = locate_dotted_path(dotted_path).origin
-        msg = str(e) + f' (Loaded from: {origin})'
+        msg = f'{str(e)} (Loaded from: {origin})'
         e.args = (msg, )
         raise
 
@@ -249,11 +243,10 @@ def locate_dotted_path_root(dotted_path):
 def _process_children(ch):
     if hasattr(ch, 'name'):
         return [(ch.name.value, ch.type, ch.get_code())]
-    else:
-        nested = ((c.get_defined_names(), c.type, c.get_code().strip())
-                  for c in ch.children if hasattr(c, 'get_defined_names'))
-        return ((name.value, type_, code) for names, type_, code in nested
-                for name in names)
+    nested = ((c.get_defined_names(), c.type, c.get_code().strip())
+              for c in ch.children if hasattr(c, 'get_defined_names'))
+    return ((name.value, type_, code) for names, type_, code in nested
+            for name in names)
 
 
 def _check_last_definition_is_function(module, name, dotted_path):
@@ -286,13 +279,11 @@ def _check_defines_function_with_name(path, name, dotted_path):
     fns = [fn for fn in module.iter_funcdefs() if fn.name.value == name]
 
     if not fns:
-        # check if there are import statements defining the attribute
-        imports = [
-            imp for imp in module.iter_imports()
+        if imports := [
+            imp
+            for imp in module.iter_imports()
             if name in [n.value for n in imp.get_defined_names()]
-        ]
-
-        if imports:
+        ]:
             # FIXME: show all imports in the error message instead of
             # only the first one
             import_ = imports[0].get_code()

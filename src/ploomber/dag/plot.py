@@ -32,11 +32,7 @@ def choose_backend(backend):
 def json_dag_parser(graph: dict):
     """Format dag dict so d3 can understand it
     """
-    nodes = {}
-
-    for task in graph["nodes"]:
-        nodes[task["id"]] = task
-
+    nodes = {task["id"]: task for task in graph["nodes"]}
     # change name label to products for now
     for node in nodes:
         nodes[node]["products"] = (nodes[node]["label"].replace("\n",

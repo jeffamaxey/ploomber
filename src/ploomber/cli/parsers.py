@@ -295,8 +295,7 @@ def _add_cli_args_from_env_dict_keys(parser, env_dict):
     for arg, val in flat_env_dict.items():
         # do not add default keys like {{cwd}}, {{here}}
         if arg not in env_dict.default_keys:
-            parser.add_argument('--env--' + arg,
-                                help='Default: {}'.format(val))
+            parser.add_argument(f'--env--{arg}', help=f'Default: {val}')
 
 
 def _parse_signature_from_callable(callable_):
@@ -334,13 +333,11 @@ def add_argument_kwargs(params, arg):
 
     # special case, bool with default value becomes a flag
     if fn_annotation is bool and fn_default is not inspect._empty:
-        kwargs = {'action': 'store_true' if not fn_default else 'store_false'}
+        return {'action': 'store_false' if fn_default else 'store_true'}
     elif fn_annotation in valid_hints:
-        kwargs = {'type': fn_annotation, 'default': fn_default}
+        return {'type': fn_annotation, 'default': fn_default}
     else:
-        kwargs = {'default': fn_default}
-
-    return kwargs
+        return {'default': fn_default}
 
 
 def _add_args_from_callable(parser, callable_):
@@ -360,9 +357,11 @@ def _add_args_from_callable(parser, callable_):
         conflict = False
 
         try:
-            parser.add_argument('--' + arg,
-                                help=get_desc(doc, arg),
-                                **add_argument_kwargs(params, arg))
+            parser.add_argument(
+                f'--{arg}',
+                help=get_desc(doc, arg),
+                **add_argument_kwargs(params, arg),
+            )
         except argparse.ArgumentError as e:
             conflict = e
 
@@ -383,7 +382,7 @@ def _add_args_from_callable(parser, callable_):
 
     if doc['summary']:
         desc = parser.description
-        parser.description = '{}. {}'.format(desc, doc['summary'])
+        parser.description = f"{desc}. {doc['summary']}"
 
     return required, defaults
 
@@ -428,18 +427,15 @@ def _process_file_dir_or_glob(parser, dagspec_arg=None):
     # directory
     if entry_point.type == EntryPoint.Directory:
         dag = DAGSpec.from_directory(dagspec_arg).to_dag()
-    # pattern
     elif entry_point.type == EntryPoint.Pattern:
         dag = DAGSpec.from_files(dagspec_arg).to_dag()
-    # file
+    elif path_to_env:
+        # and replace keys depending on passed cli args
+        replaced = _env_keys_to_override(args, parser.static_args)
+        env = env_dict._replace_flatten_keys(replaced)
+        dag = DAGSpec(dagspec_arg, env=env).to_dag()
     else:
-        if path_to_env:
-            # and replace keys depending on passed cli args
-            replaced = _env_keys_to_override(args, parser.static_args)
-            env = env_dict._replace_flatten_keys(replaced)
-            dag = DAGSpec(dagspec_arg, env=env).to_dag()
-        else:
-            dag = DAGSpec(dagspec_arg).to_dag()
+        dag = DAGSpec(dagspec_arg).to_dag()
 
     return dag, args
 
@@ -461,23 +457,19 @@ def load_dag_from_entry_point_and_parser(entry_point, parser, argv):
     # warning because the last thing to try is to interpret it as a dotted
     # path and that's probably not what the user wants
     if not entry_point.exists() and entry_point.suffix in {'.yaml', '.yml'}:
-        warnings.warn('Entry point value "{}" has extension "{}", which '
-                      'suggests a spec file, but the file doesn\'t '
-                      'exist'.format(entry_point, entry_point.suffix))
+        warnings.warn(
+            f"""Entry point value "{entry_point}" has extension "{entry_point.suffix}", which suggests a spec file, but the file doesn\'t exist"""
+        )
 
     # even if the entry file is not a file nor a valid module, show the
     # help menu, but show a warning
     if (help_cmd and not entry_point.exists()):
-        warnings.warn('Failed to load entry point "{}". It is not a file '
-                      'nor a valid dotted path'.format(entry_point))
+        warnings.warn(
+            f'Failed to load entry point "{entry_point}". It is not a file nor a valid dotted path'
+        )
 
         args = parser.parse_args()
 
-    # at this point there are two remaining cases:
-    # no help command (entry point may or may not exist),:
-    #   we attempt to run the command
-    # help command and exists:
-    #   we just parse parameters to display them in the help menu
     elif entry_point.type == EntryPoint.DottedPath:
         dag, args = parser.process_factory_dotted_path(entry_point)
     elif entry_point.type == EntryPoint.ModulePath:
@@ -508,11 +500,9 @@ def _flatten_dict(d, prefix=''):
 def _configure_logger(args):
     """Configure logger if user passed --log/--log-file args
     """
-    if hasattr(args, 'log'):
-        if args.log is not None:
-            logging.basicConfig(level=args.log.upper())
+    if hasattr(args, 'log') and args.log is not None:
+        logging.basicConfig(level=args.log.upper())
 
-    if hasattr(args, "log_file"):
-        if args.log_file is not None:
-            file_handler = logging.FileHandler(args.log_file)
-            logging.getLogger().addHandler(file_handler)
+    if hasattr(args, "log_file") and args.log_file is not None:
+        file_handler = logging.FileHandler(args.log_file)
+        logging.getLogger().addHandler(file_handler)

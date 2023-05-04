@@ -82,12 +82,7 @@ class AbstractStorageClient(abc.ABC):
 
     def _remote_exists(self, local):
         remote = self._remote_path(local)
-        is_file = self._is_file(remote)
-
-        if is_file:
-            return True
-
-        return self._is_dir(remote)
+        return True if (is_file := self._is_file(remote)) else self._is_dir(remote)
 
     def close(self):
         # required to comply with the Client API
